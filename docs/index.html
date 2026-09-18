@@ -1,0 +1,2229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Motif — Custom Icon Seamless Pattern Generator</title>
+<style>
+/* ===== Design tokens ===== */
+:root{
+  --bg:#121214;
+  --panel:#1b1b1f;
+  --panel-2:#202026;
+  --border:#2c2c33;
+  --text:#e9e7e4;
+  --muted:#94929c;
+  --accent:#6d5aff;
+  --accent-2:#ff6b6b;
+  --accent-soft:#6d5aff33;
+  --radius-lg:14px;
+  --radius-sm:8px;
+  --mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+}
+[data-theme="light"]{
+  --bg:#f3f2ef;
+  --panel:#ffffff;
+  --panel-2:#f7f6f4;
+  --border:#e2e0da;
+  --text:#1c1b1f;
+  --muted:#6e6c75;
+  --accent:#6d5aff;
+  --accent-2:#e35b5b;
+  --accent-soft:#6d5aff22;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:var(--sans);
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+
+/* ===== Topbar ===== */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 22px;
+  border-bottom:1px solid var(--border);
+  background:var(--panel);
+}
+.brand{display:flex;align-items:baseline;gap:8px;}
+.brand-mark{color:var(--accent);font-size:20px;}
+.brand-name{font-size:19px;font-weight:700;letter-spacing:-0.02em;}
+.brand-sub{color:var(--muted);font-size:12.5px;}
+.topbar-actions{display:flex;gap:10px;}
+
+/* ===== Buttons ===== */
+.btn{
+  border:1px solid var(--border);
+  background:var(--panel-2);
+  color:var(--text);
+  padding:8px 14px;
+  border-radius:var(--radius-sm);
+  font-size:13px;
+  cursor:pointer;
+  transition:transform .08s ease, background .15s ease;
+  white-space:nowrap;
+}
+.btn:hover{background:var(--accent-soft);}
+.btn:active{transform:scale(0.97);}
+.btn-accent{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600;}
+.btn-accent:hover{background:#5a48e0;}
+.btn-secondary{background:var(--panel-2);}
+.btn-ghost{background:transparent;border-color:transparent;}
+.btn-tiny{padding:5px 9px;font-size:12px;}
+.btn.full{width:100%;margin-top:8px;}
+
+/* ===== Layout ===== */
+.app{
+  display:grid;
+  grid-template-columns: 300px 1fr 300px;
+  gap:16px;
+  padding:16px;
+  flex:1;
+  align-items:start;
+}
+.panel{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  padding:10px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.panel-center{padding:16px;gap:16px;}
+
+/* ===== Sections (accordion) ===== */
+.section{
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  background:var(--panel-2);
+  overflow:hidden;
+}
+.section > summary{
+  padding:10px 12px;
+  cursor:pointer;
+  font-weight:600;
+  font-size:13.5px;
+  list-style:none;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.section > summary::-webkit-details-marker{display:none;}
+.section > summary::after{content:'+';color:var(--muted);font-weight:400;}
+.section[open] > summary::after{content:'–';}
+.section-body{padding:12px;display:flex;flex-direction:column;gap:10px;}
+.section-body.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.section-body.grid-2 label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--muted);}
+.section-body label{font-size:12.5px;color:var(--muted);display:flex;flex-direction:column;gap:4px;}
+.full{grid-column:1 / -1;}
+
+/* form controls */
+input[type=range]{width:100%;accent-color:var(--accent);}
+input[type=color]{width:100%;height:30px;border:1px solid var(--border);border-radius:6px;background:none;padding:2px;}
+input[type=number], input[type=text], .seed-input{
+  background:var(--panel);border:1px solid var(--border);color:var(--text);
+  border-radius:6px;padding:6px 8px;font-size:13px;width:100%;
+}
+.select{
+  background:var(--panel);border:1px solid var(--border);color:var(--text);
+  border-radius:6px;padding:7px 8px;font-size:13px;width:100%;
+}
+textarea{
+  background:var(--panel);border:1px solid var(--border);color:var(--text);
+  border-radius:6px;padding:6px 8px;font-size:12.5px;width:100%;resize:vertical;font-family:var(--sans);
+}
+.val{color:var(--accent);font-weight:600;float:right;font-family:var(--mono);font-size:11.5px;}
+.hint{font-size:11.5px;color:var(--muted);line-height:1.5;margin:2px 0 0;}
+.row-gap{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.group-label{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:0 0 4px;}
+
+/* toggles */
+.toggles{display:flex;flex-direction:column;gap:6px;}
+.switch{display:flex !important;flex-direction:row !important;align-items:center;gap:8px;color:var(--text) !important;font-size:12.5px;cursor:pointer;}
+.switch.small{font-size:11.5px;color:var(--muted) !important;}
+.switch input{accent-color:var(--accent);width:15px;height:15px;}
+
+/* ===== Upload ===== */
+.dropzone{
+  border:1.5px dashed var(--border);
+  border-radius:var(--radius-sm);
+  padding:22px 14px;
+  text-align:center;
+  transition:border-color .15s ease, background .15s ease;
+}
+.dropzone.dragover{border-color:var(--accent);background:var(--accent-soft);}
+.dz-title{font-size:13.5px;margin:0 0 2px;}
+.dz-sub{font-size:11.5px;color:var(--muted);margin:0 0 12px;}
+.upload-preview{margin-top:10px;text-align:center;}
+.upload-actions{display:flex;gap:6px;justify-content:center;margin-top:8px;flex-wrap:wrap;}
+.hidden{display:none !important;}
+
+/* ===== Icon gallery (multi-icon upload) ===== */
+.icon-count{font-size:11.5px;color:var(--muted);margin:0 0 8px;text-align:left;}
+.icon-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(62px,1fr));gap:8px;}
+.icon-thumb{
+  position:relative;border:1px solid var(--border);border-radius:8px;
+  background:repeating-conic-gradient(#8883 0% 25%,transparent 0% 50%) 50%/12px 12px;
+  padding:6px;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;
+}
+.icon-thumb img{max-width:100%;max-height:100%;object-fit:contain;display:block;}
+.icon-thumb .icon-remove{
+  position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;
+  border:1px solid var(--border);background:var(--panel);color:var(--text);
+  font-size:11px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;
+}
+.icon-thumb .icon-remove:hover{background:var(--accent-2);color:#fff;border-color:var(--accent-2);}
+
+/* ===== Center / preview ===== */
+.style-group{margin-bottom:8px;}
+.preview-area{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.preview-block{display:flex;flex-direction:column;gap:8px;}
+.preview-header{display:flex;align-items:center;justify-content:space-between;}
+.preview-header h3{margin:0;font-size:13.5px;font-weight:600;}
+.seed-badge{font-size:11.5px;color:var(--muted);}
+.seed-badge code{color:var(--accent);font-family:var(--mono);}
+canvas{
+  width:100%;
+  aspect-ratio:1/1;
+  background:repeating-conic-gradient(#8883 0% 25%,transparent 0% 50%) 50%/20px 20px;
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+}
+.seed-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px;background:var(--panel-2);border:1px solid var(--border);border-radius:var(--radius-sm);}
+.seed-input{max-width:140px;font-family:var(--mono);}
+.lock-group{display:flex;gap:12px;margin-left:auto;flex-wrap:wrap;}
+
+/* presets */
+.preset-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;}
+.preset-card{
+  border:1px solid var(--border);background:var(--panel);border-radius:8px;
+  padding:10px;text-align:left;cursor:pointer;font-size:12px;color:var(--text);
+}
+.preset-card:hover{border-color:var(--accent);}
+.preset-card b{display:block;font-size:12.5px;margin-bottom:2px;}
+.preset-card span{color:var(--muted);font-size:11px;}
+
+/* batch */
+.batch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:10px;}
+.batch-item{border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--panel);}
+.batch-item canvas{border-radius:0;border:none;aspect-ratio:1/1;}
+.batch-meta{padding:6px 8px;font-size:11px;color:var(--muted);}
+.batch-actions{display:flex;gap:4px;padding:0 6px 6px;flex-wrap:wrap;}
+
+/* swatches */
+.swatch-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;}
+.swatch{
+  width:100%;aspect-ratio:1/1;border-radius:6px;border:1px solid var(--border);
+  cursor:pointer;position:relative;
+}
+.swatch.active{outline:2px solid var(--accent);outline-offset:1px;}
+.swatch-slot{position:relative;}
+.swatch-slot input[type=color]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+
+/* copy buttons */
+.copy-btn{align-self:flex-start;margin-top:-6px;}
+
+/* status bar */
+.statusbar{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 22px;border-top:1px solid var(--border);
+  font-size:11.5px;color:var(--muted);background:var(--panel);
+}
+.filename-preview{font-family:var(--mono);}
+
+/* ===== Responsive ===== */
+@media (max-width: 1100px){
+  .app{grid-template-columns:1fr;}
+  .preview-area{grid-template-columns:1fr;}
+}
+@media (max-width: 640px){
+  .topbar{padding:10px 14px;}
+  .app{padding:10px;gap:10px;}
+  .section-body.grid-2{grid-template-columns:1fr;}
+  .swatch-grid{grid-template-columns:repeat(6,1fr);}
+}
+
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">◇</span>
+    <span class="brand-name">Motif</span>
+    <span class="brand-sub">seamless pattern studio</span>
+  </div>
+  <div class="topbar-actions">
+    <button id="btnRandomizeTop" class="btn btn-accent" title="Randomize pattern">Randomize Pattern</button>
+    <button id="btnTheme" class="btn btn-ghost" title="Toggle theme">🌙</button>
+  </div>
+</header>
+
+<main class="app">
+
+  <!-- ============ LEFT PANEL ============ -->
+  <aside class="panel panel-left">
+
+    <details class="section" open>
+      <summary>Upload</summary>
+      <div class="section-body">
+        <div id="dropzone" class="dropzone">
+          <p class="dz-title">Drag &amp; drop your icons here</p>
+          <p class="dz-sub">SVG, PNG, JPG or WEBP — select several to mix icons</p>
+          <label class="btn btn-secondary" for="fileInput">Choose Files</label>
+          <input type="file" id="fileInput" accept=".svg,.png,.jpg,.jpeg,.webp" hidden multiple>
+        </div>
+        <div id="uploadPreview" class="upload-preview hidden">
+          <p id="iconCount" class="icon-count"></p>
+          <div id="iconGallery" class="icon-gallery"></div>
+          <div class="upload-actions">
+            <label class="btn btn-tiny" for="fileInput">Add More</label>
+            <button id="btnRemoveImage" class="btn btn-tiny">Remove All</button>
+          </div>
+        </div>
+        <p id="uploadHint" class="hint">No image uploaded yet — a placeholder motif is used so you can explore the tool.</p>
+      </div>
+    </details>
+
+    <details class="section" open>
+      <summary>Image Settings</summary>
+      <div class="section-body grid-2">
+        <label>Scale <span class="val" id="valScale">100%</span>
+          <input type="range" id="scale" min="0" max="500" value="100"></label>
+        <label>Rotation <span class="val" id="valRotation">0°</span>
+          <input type="range" id="rotation" min="-360" max="360" value="0"></label>
+        <label>Opacity <span class="val" id="valOpacity">100%</span>
+          <input type="range" id="opacity" min="0" max="100" value="100"></label>
+        <label>Spacing <span class="val" id="valSpacing">40px</span>
+          <input type="range" id="spacing" min="0" max="500" value="40"></label>
+        <label>Offset X <span class="val" id="valOffsetX">0</span>
+          <input type="range" id="offsetX" min="-500" max="500" value="0"></label>
+        <label>Offset Y <span class="val" id="valOffsetY">0</span>
+          <input type="range" id="offsetY" min="-500" max="500" value="0"></label>
+        <div class="toggles full">
+          <label class="switch"><input type="checkbox" id="randRotation"> Random Rotation</label>
+          <label class="switch"><input type="checkbox" id="randScale"> Random Scale</label>
+          <label class="switch"><input type="checkbox" id="randOpacity"> Random Opacity</label>
+          <label class="switch"><input type="checkbox" id="randPosition"> Random Position</label>
+          <label class="switch"><input type="checkbox" id="flipH"> Flip Horizontal</label>
+          <label class="switch"><input type="checkbox" id="flipV"> Flip Vertical</label>
+        </div>
+        <label class="full" id="iconDistributionRow">Multiple Icons
+          <select id="iconDistribution" class="select">
+            <option value="sequential">Cycle in order</option>
+            <option value="random">Random per instance</option>
+          </select>
+        </label>
+      </div>
+    </details>
+
+    <details class="section">
+      <summary>Colorization</summary>
+      <div class="section-body">
+        <select id="colorMode" class="select">
+          <option value="original">Original Color</option>
+          <option value="single">Single Color</option>
+          <option value="palette">Palette Color</option>
+          <option value="duotone">Duotone</option>
+          <option value="gradient">Gradient</option>
+          <option value="randomPalette">Random Palette</option>
+        </select>
+        <div id="singleColorRow" class="hidden row-gap">
+          <label>Color <input type="color" id="singleColor" value="#6d5aff"></label>
+        </div>
+        <div id="duotoneRow" class="hidden row-gap">
+          <label>Color A <input type="color" id="duotoneA" value="#121214"></label>
+          <label>Color B <input type="color" id="duotoneB" value="#6d5aff"></label>
+        </div>
+        <div id="gradientRow" class="hidden row-gap">
+          <label>From <input type="color" id="gradientA" value="#6d5aff"></label>
+          <label>To <input type="color" id="gradientB" value="#ff6b6b"></label>
+        </div>
+        <p class="hint">SVG icons recolor as true vectors. Raster icons recolor via an alpha mask — transparency is preserved.</p>
+      </div>
+    </details>
+
+    <details class="section">
+      <summary>Icon Transform</summary>
+      <div class="section-body">
+        <select id="iconTransform" class="select">
+          <option value="original">Original</option>
+          <option value="outline">Outline</option>
+          <option value="filled">Filled</option>
+          <option value="monochrome">Monochrome</option>
+          <option value="duotone">Duotone</option>
+          <option value="shadow">Shadow</option>
+          <option value="glow">Glow</option>
+          <option value="softBlur">Soft Blur</option>
+          <option value="transparent">Transparent (50%)</option>
+          <option value="gradientFill">Gradient Fill</option>
+        </select>
+      </div>
+    </details>
+
+    <details class="section">
+      <summary>Shadow &amp; Glow</summary>
+      <div class="section-body grid-2">
+        <label>Shadow
+          <select id="shadowMode" class="select"><option>None</option><option>Soft</option><option>Medium</option><option>Strong</option></select>
+        </label>
+        <label>Glow
+          <select id="glowMode" class="select"><option>None</option><option>Soft</option><option>Neon</option><option>Strong</option></select>
+        </label>
+        <label>Glow Color <input type="color" id="glowColor" value="#6d5aff"></label>
+        <label>Shadow Offset X <input type="range" id="shadowOffX" min="-50" max="50" value="4"></label>
+        <label>Shadow Offset Y <input type="range" id="shadowOffY" min="-50" max="50" value="4"></label>
+      </div>
+    </details>
+
+  </aside>
+
+  <!-- ============ CENTER ============ -->
+  <section class="panel panel-center">
+
+    <div class="pattern-style-bar">
+      <details class="section" open>
+        <summary>Pattern Style</summary>
+        <div class="section-body">
+          <div class="style-group">
+            <p class="group-label">Basic</p>
+            <select id="patternStyle" class="select"></select>
+          </div>
+          <div class="grid-2">
+            <label>Density <span class="val" id="valDensity">55%</span>
+              <input type="range" id="density" min="10" max="100" value="55"></label>
+            <label>Pattern Size
+              <select id="patternSize" class="select">
+                <option value="small">Small</option>
+                <option value="medium" selected>Medium</option>
+                <option value="large">Large</option>
+                <option value="xl">Extra Large</option>
+              </select>
+            </label>
+            <label>Pattern Rotation
+              <select id="patternRotation" class="select">
+                <option>0</option><option>15</option><option>30</option><option>45</option>
+                <option>60</option><option>90</option><option>180</option>
+              </select>
+            </label>
+            <label>Seamless
+              <select id="seamlessMode" class="select">
+                <option value="xy" selected>Seamless X + Y</option>
+                <option value="x">Seamless X</option>
+                <option value="y">Seamless Y</option>
+              </select>
+            </label>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <div class="preview-area">
+      <div class="preview-block">
+        <div class="preview-header">
+          <h3>Main Preview</h3>
+          <span class="seed-badge">Seed: <code id="seedDisplay">—</code></span>
+        </div>
+        <canvas id="mainCanvas" width="600" height="600"></canvas>
+      </div>
+      <div class="preview-block">
+        <div class="preview-header">
+          <h3>3×3 Tile Preview</h3>
+        </div>
+        <canvas id="tileCanvas" width="600" height="600"></canvas>
+      </div>
+    </div>
+
+    <div class="seed-bar">
+      <button id="btnRandomSeed" class="btn btn-secondary">Random Seed</button>
+      <input type="text" id="seedInput" class="seed-input" placeholder="Seed number">
+      <button id="btnUseSeed" class="btn btn-secondary">Generate From Seed</button>
+      <button id="btnCopySeed" class="btn btn-secondary">Copy Seed</button>
+      <span class="lock-group">
+        <label class="switch small"><input type="checkbox" id="lockStyle"> Lock Style</label>
+        <label class="switch small"><input type="checkbox" id="lockPalette"> Lock Palette</label>
+        <label class="switch small"><input type="checkbox" id="lockScale"> Lock Scale</label>
+      </span>
+    </div>
+
+    <details class="section">
+      <summary>Presets</summary>
+      <div class="section-body">
+        <div id="presetGrid" class="preset-grid"></div>
+      </div>
+    </details>
+
+    <details class="section">
+      <summary>Batch Generator</summary>
+      <div class="section-body">
+        <div class="row-gap">
+          <select id="batchCount" class="select" style="max-width:120px">
+            <option>4</option><option>8</option><option selected>12</option><option>20</option>
+          </select>
+          <button id="btnBatch" class="btn btn-secondary">Generate Batch</button>
+        </div>
+        <div id="batchGrid" class="batch-grid"></div>
+      </div>
+    </details>
+
+  </section>
+
+  <!-- ============ RIGHT PANEL ============ -->
+  <aside class="panel panel-right">
+
+    <details class="section" open>
+      <summary>Color Palette</summary>
+      <div class="section-body">
+        <select id="paletteCategory" class="select"></select>
+        <div id="paletteSwatches" class="swatch-grid"></div>
+        <div class="row-gap">
+          <button id="btnRandomPalette" class="btn btn-tiny">Random Palette</button>
+          <button id="btnSavePalette" class="btn btn-tiny">Save Palette</button>
+          <button id="btnLoadPalette" class="btn btn-tiny">Load Palette</button>
+        </div>
+        <p class="group-label" style="margin-top:10px">Custom Slots</p>
+        <div id="customSlots" class="swatch-grid"></div>
+      </div>
+    </details>
+
+    <details class="section" open>
+      <summary>Canvas Size</summary>
+      <div class="section-body">
+        <select id="canvasPreset" class="select"></select>
+        <div class="grid-2">
+          <label>Width <input type="number" id="canvasW" value="2000"></label>
+          <label>Height <input type="number" id="canvasH" value="2000"></label>
+        </div>
+        <label>DPI
+          <select id="dpi" class="select">
+            <option>72</option><option>150</option><option selected>300</option><option value="custom">Custom</option>
+          </select>
+        </label>
+        <div class="row-gap">
+          <button id="btnMicrostockSquare" class="btn btn-tiny">Microstock Square</button>
+          <button id="btnMicrostockLandscape" class="btn btn-tiny">Microstock Landscape</button>
+          <button id="btnMicrostockPortrait" class="btn btn-tiny">Microstock Portrait</button>
+        </div>
+        <p class="hint">Marketplace requirements may vary. Check the current technical requirements of the stock marketplace before submission.</p>
+      </div>
+    </details>
+
+    <details class="section" open>
+      <summary>Background</summary>
+      <div class="section-body">
+        <select id="bgType" class="select">
+          <option value="transparent">Transparent</option>
+          <option value="solid" selected>Solid</option>
+          <option value="gradient">Gradient</option>
+          <option value="twoColor">Two Color</option>
+        </select>
+        <div class="grid-2">
+          <label>Color A <input type="color" id="bgColorA" value="#121214"></label>
+          <label>Color B <input type="color" id="bgColorB" value="#2a2a30"></label>
+        </div>
+      </div>
+    </details>
+
+    <details class="section" open>
+      <summary>Export</summary>
+      <div class="section-body">
+        <button id="btnDownloadPng" class="btn btn-accent full">Download PNG</button>
+        <button id="btnDownloadSvg" class="btn btn-accent full">Download SVG</button>
+        <div class="row-gap">
+          <label class="switch small"><input type="checkbox" id="optimizeSvg" checked> Optimize SVG</label>
+        </div>
+        <div class="grid-2">
+          <label>JPG Quality
+            <select id="jpgQuality" class="select"><option>80</option><option>90</option><option selected>100</option></select>
+          </label>
+          <button id="btnDownloadJpg" class="btn btn-secondary full">Download JPG</button>
+        </div>
+        <hr>
+        <button id="btnSaveSettings" class="btn btn-secondary full">Save Settings</button>
+        <button id="btnLoadSettings" class="btn btn-secondary full">Load Settings</button>
+        <button id="btnResetSettings" class="btn btn-ghost full">Reset</button>
+      </div>
+    </details>
+
+    <details class="section">
+      <summary>Metadata</summary>
+      <div class="section-body">
+        <button id="btnGenMetadata" class="btn btn-secondary full">Generate Metadata</button>
+        <label>Title<textarea id="metaTitle" rows="2" readonly></textarea></label>
+        <button class="btn btn-tiny copy-btn" data-copy="metaTitle">Copy Title</button>
+        <label>Description<textarea id="metaDesc" rows="3" readonly></textarea></label>
+        <button class="btn btn-tiny copy-btn" data-copy="metaDesc">Copy Description</button>
+        <label>Keywords<textarea id="metaKeywords" rows="3" readonly></textarea></label>
+        <button class="btn btn-tiny copy-btn" data-copy="metaKeywords">Copy Keywords</button>
+      </div>
+    </details>
+
+  </aside>
+</main>
+
+<footer class="statusbar">
+  <span id="statusText">Ready.</span>
+  <span id="filenamePreview" class="filename-preview"></span>
+</footer>
+
+<script>
+/* ===========================================================
+   data.js — static data: palettes, canvas presets, styles, presets
+   =========================================================== */
+
+const PALETTES = {
+  "Monochrome": {
+    "Black & White": ["#0a0a0a","#3a3a3a","#6b6b6b","#a3a3a3","#f2f2f2"],
+    "Charcoal": ["#1a1a1c","#2c2c30","#454549","#6d6d72","#9a999f"],
+    "Gray": ["#212124","#4a4a4f","#767679","#a3a2a6","#d4d3d6"],
+    "Soft Gray": ["#e8e7e6","#d3d2d0","#b7b6b4","#989795","#777674"],
+    "Dark Monochrome": ["#050506","#151517","#26262a","#3b3b40","#54545a"]
+  },
+  "Neutral": {
+    "Beige": ["#efe6d8","#e0d3ba","#cdb896","#b39b74","#8f7a57"],
+    "Cream": ["#faf5e9","#f0e6cf","#e3d3ac","#d0b980","#b89a5c"],
+    "Sand": ["#f2e4c9","#e5cd9e","#d3af71","#b98d4d","#93693a"],
+    "Taupe": ["#e6ddd3","#cbbcac","#a8977f","#847259","#5f5140"],
+    "Warm Neutral": ["#f1e6da","#dcc9b3","#c1a687","#a3805e","#7a5e42"],
+    "Cool Neutral": ["#e9ebea","#d1d5d3","#adb4b1","#868f8c","#5f6764"]
+  },
+  "Blue": {
+    "Ocean Blue": ["#e3f2f7","#a9d6e5","#61a5c2","#2c7da0","#124b6b"],
+    "Sky Blue": ["#eaf6ff","#bfe4ff","#82c9ff","#4aa8f0","#1c73c9"],
+    "Navy": ["#dfe4ec","#a9b6cc","#5f74a0","#2d3f66","#131c33"],
+    "Royal Blue": ["#e2e7fb","#a9b7f2","#6d84e6","#3450c9","#1c2f8f"],
+    "Denim": ["#dde6ef","#a9c1d6","#7194b0","#476f8f","#2b4964"],
+    "Aqua": ["#e0fbfb","#a6ecec","#5fd3d3","#2fa8a8","#166f6f"]
+  },
+  "Green": {
+    "Forest": ["#dfe9de","#a9c6a4","#6c9a66","#3f6b3a","#1f421d"],
+    "Emerald": ["#dcf5e6","#a3e6bf","#57cf8e","#1fa565","#106f42"],
+    "Sage": ["#e6ebe1","#c9d3bd","#a6b394","#84906d","#5f6b4b"],
+    "Mint": ["#e2f9ee","#aef0d2","#6fdfae","#33c184","#1c8f60"],
+    "Olive": ["#eaeacb","#cfcf8e","#adad5c","#82823a","#565622"]
+  },
+  "Red / Orange": {
+    "Red": ["#fbe2e2","#f0a3a3","#e15f5f","#c22c2c","#7c1414"],
+    "Burgundy": ["#f0dde0","#cf98a1","#a25060","#701d2b","#420f18"],
+    "Coral": ["#ffe6df","#ffb8a3","#ff8763","#f25c3a","#c23a1e"],
+    "Terracotta": ["#f2e0d5","#dcae8f","#c17f56","#9c5c34","#6e3d1f"],
+    "Orange": ["#ffe9d6","#ffc48c","#ff9d4d","#f27c1c","#b85c0c"],
+    "Sunset": ["#ffe2cf","#ffb694","#ff8666","#e85c40","#a8321f"]
+  },
+  "Purple / Pink": {
+    "Purple": ["#ece0f7","#c9a3e8","#a267d6","#7530b0","#4a1a77"],
+    "Violet": ["#e9e2fb","#c1a8f2","#9670e6","#6a3ec9","#43268f"],
+    "Lavender": ["#efe8fa","#d5c4ef","#b39ee1","#8f74cb","#6a53a0"],
+    "Magenta": ["#fbe0f3","#f0a3d6","#e061b8","#c22c90","#7c1462"],
+    "Rose": ["#fbe2e8","#f2a8bf","#e6698f","#c93564","#8f1c40"],
+    "Blush": ["#fcebee","#f5c9d2","#eba3b3","#dd7690","#c14a6a"]
+  },
+  "Pastel": {
+    "Pastel Rainbow": ["#ffd6e0","#ffe8b3","#d6f5c6","#c2e9f5","#dcd3f5"],
+    "Soft Pink": ["#ffeef2","#ffd3de","#ffb3c6","#ff92ae","#f56d92"],
+    "Soft Blue": ["#eaf6ff","#cfeaff","#aad9ff","#82c4f5","#5aa8e0"],
+    "Soft Green": ["#eefaec","#d3f0cc","#b3e6a8","#8fd47f","#6bbf5c"],
+    "Soft Yellow": ["#fffbe0","#fff2b3","#ffe680","#ffd94d","#f0c22e"],
+    "Soft Lavender": ["#f3eefc","#e0d3f5","#c9b3ec","#af92e0","#9273cc"],
+    "Peach": ["#fff0e6","#ffdcc2","#ffc299","#ffa670","#f5864a"]
+  },
+  "Premium": {
+    "Black & Gold": ["#0a0a0a","#1c1a12","#4a3d1e","#a9832e","#e3b94a"],
+    "Navy & Gold": ["#0d1b2e","#1b3a5c","#3d5a80","#a9832e","#e3b94a"],
+    "Black & Silver": ["#0a0a0a","#2b2b2d","#54545a","#9a9aa0","#d4d4d8"],
+    "Champagne": ["#f5ecd8","#e6d3ab","#d3b87e","#b8955a","#8f6f3e"],
+    "Bronze": ["#e6d3bb","#c9a06e","#a3743f","#7a5228","#4f3416"],
+    "Luxury Dark": ["#0d0d0f","#1e1a12","#3a2f18","#6b552a","#a9832e"]
+  },
+  "Vibrant": {
+    "Neon": ["#0af0d0","#f00af0","#f0f00a","#0a7bf0","#f03a0a"],
+    "Rainbow": ["#f03a3a","#f0a93a","#e6e63a","#3ae672","#3a7bf0"],
+    "Tropical": ["#ff5e5e","#ffb84d","#3ddc97","#26a9e0","#7b5cff"],
+    "Candy": ["#ff6fae","#ff9ecf","#ffd36e","#7fe0e0","#a08cff"],
+    "Electric": ["#00f0ff","#0057ff","#a800ff","#ff00c8","#fff400"],
+    "Bright Color": ["#ff3b30","#ff9500","#ffcc00","#34c759","#007aff"]
+  }
+};
+
+const CUSTOM_SLOTS_DEFAULT = ["#6d5aff","#ff6b6b","#ffd166","#06d6a0","#118ab2","#073b4c","#ef476f","#8338ec"];
+
+const CANVAS_PRESETS = {
+  "Square": [
+    {label:"2000 × 2000 px", w:2000, h:2000},
+    {label:"3000 × 3000 px", w:3000, h:3000},
+    {label:"4000 × 4000 px", w:4000, h:4000},
+    {label:"5000 × 5000 px", w:5000, h:5000},
+    {label:"6000 × 6000 px", w:6000, h:6000}
+  ],
+  "Landscape": [
+    {label:"1920 × 1080 px", w:1920, h:1080},
+    {label:"3000 × 2000 px", w:3000, h:2000},
+    {label:"4000 × 2667 px", w:4000, h:2667},
+    {label:"5000 × 3333 px", w:5000, h:3333},
+    {label:"6000 × 4000 px", w:6000, h:4000}
+  ],
+  "Portrait": [
+    {label:"1080 × 1920 px", w:1080, h:1920},
+    {label:"2000 × 3000 px", w:2000, h:3000},
+    {label:"3000 × 4500 px", w:3000, h:4500},
+    {label:"4000 × 6000 px", w:4000, h:6000}
+  ],
+  "Common Print (300dpi)": [
+    {label:"A4 — 2480 × 3508 px", w:2480, h:3508},
+    {label:"A3 — 3508 × 4961 px", w:3508, h:4961},
+    {label:"A2 — 4961 × 7016 px", w:4961, h:7016},
+    {label:"A1 — 7016 × 9933 px", w:7016, h:9933}
+  ],
+  "Microstock": [
+    {label:"Microstock Square — 4000 × 4000 px", w:4000, h:4000},
+    {label:"Microstock Landscape — 6000 × 4000 px", w:6000, h:4000},
+    {label:"Microstock Portrait — 4000 × 6000 px", w:4000, h:6000}
+  ]
+};
+
+/* Pattern styles: value -> { label, group, algo, params } */
+const PATTERN_STYLES = [
+  {v:"grid", label:"Grid", group:"Basic", algo:"grid", p:{}},
+  {v:"offsetGrid", label:"Offset Grid", group:"Basic", algo:"offsetGrid", p:{drop:0.5}},
+  {v:"brick", label:"Brick", group:"Basic", algo:"offsetGrid", p:{drop:0.5, brick:true}},
+  {v:"halfDrop", label:"Half Drop", group:"Basic", algo:"halfDrop", p:{}},
+  {v:"fullDrop", label:"Full Drop", group:"Basic", algo:"fullDrop", p:{}},
+  {v:"random", label:"Random", group:"Basic", algo:"jitterGrid", p:{jitter:0.35}},
+  {v:"scattered", label:"Scattered", group:"Basic", algo:"jitterGrid", p:{jitter:0.6, sizeVar:true}},
+
+  {v:"diagonal", label:"Diagonal", group:"Advanced", algo:"shearGrid", p:{shear:0.5}},
+  {v:"zigzag", label:"Zigzag", group:"Advanced", algo:"zigzag", p:{}},
+  {v:"wave", label:"Wave", group:"Advanced", algo:"wave", p:{freq:2, amp:0.05}},
+  {v:"circular", label:"Circular", group:"Advanced", algo:"ring", p:{mode:"circular"}},
+  {v:"spiral", label:"Spiral", group:"Advanced", algo:"spiral", p:{}},
+  {v:"radial", label:"Radial", group:"Advanced", algo:"ring", p:{mode:"radial", rotateOut:true}},
+  {v:"concentric", label:"Concentric", group:"Advanced", algo:"ring", p:{mode:"concentric"}},
+  {v:"checkerboard", label:"Checkerboard", group:"Advanced", algo:"checker", p:{}},
+  {v:"honeycomb", label:"Honeycomb", group:"Advanced", algo:"hex", p:{}},
+  {v:"hexagonal", label:"Hexagonal", group:"Advanced", algo:"hex", p:{rotateIcon:30}},
+  {v:"triangular", label:"Triangular", group:"Advanced", algo:"offsetGrid", p:{drop:0.5, rotateIcon:45}},
+  {v:"diamond", label:"Diamond", group:"Advanced", algo:"offsetGrid", p:{drop:0.5, rotateIcon:45, spacingMul:1.2}},
+  {v:"geometricGrid", label:"Geometric Grid", group:"Advanced", algo:"shearGrid", p:{shear:0.15}},
+  {v:"isometric", label:"Isometric", group:"Advanced", algo:"shearGrid", p:{shear:0.3, altRotate:30}},
+  {v:"kaleidoscope", label:"Kaleidoscope", group:"Advanced", algo:"ring", p:{mode:"radial", symmetry:8, rotateOut:true}},
+  {v:"mandala", label:"Mandala", group:"Advanced", algo:"ring", p:{mode:"concentric", symmetry:12, scaleDecay:true}},
+  {v:"flowerGrid", label:"Flower Grid", group:"Advanced", algo:"grid", p:{autoRotate:true}},
+  {v:"organicFlow", label:"Organic Flow", group:"Advanced", algo:"wave", p:{freq:1.3, amp:0.09, jitter:0.15}},
+  {v:"curvedFlow", label:"Curved Flow", group:"Advanced", algo:"wave", p:{freq:0.8, amp:0.18}},
+  {v:"sineWave", label:"Sine Wave", group:"Advanced", algo:"wave", p:{freq:3, amp:0.06}},
+  {v:"randomGeometric", label:"Random Geometric", group:"Advanced", algo:"jitterGrid", p:{jitter:0.5, rotateStrong:true}},
+  {v:"densePattern", label:"Dense Pattern", group:"Advanced", algo:"grid", p:{spacingMul:0.5}},
+  {v:"minimalPattern", label:"Minimal Pattern", group:"Advanced", algo:"grid", p:{spacingMul:2.2}},
+  {v:"luxuryPattern", label:"Luxury Pattern", group:"Advanced", algo:"grid", p:{spacingMul:2.6}}
+];
+
+/* Ready-made presets combining style + palette + params */
+const PATTERN_PRESETS = [
+  {name:"Minimal Icon", style:"grid", palette:["Monochrome","Soft Gray"], spacingMul:2.2, scale:70, desc:"Small icon, generous spacing"},
+  {name:"Dense Icon", style:"densePattern", palette:["Monochrome","Charcoal"], spacingMul:0.5, scale:60, desc:"Small icon, tight spacing"},
+  {name:"Cute Pattern", style:"jitterGrid", styleValue:"random", palette:["Pastel","Pastel Rainbow"], scale:65, randRotation:true, desc:"Pastel palette, light random rotation"},
+  {name:"Modern Pattern", style:"geometricGrid", palette:["Blue","Royal Blue"], scale:85, desc:"Geometric arrangement, modern palette"},
+  {name:"Luxury Pattern", style:"luxuryPattern", palette:["Premium","Black & Gold"], scale:90, desc:"Gold + black, large spacing"},
+  {name:"Kids Pattern", style:"scattered", palette:["Pastel","Soft Yellow"], scale:80, randRotation:true, desc:"Pastel, random arrangement"},
+  {name:"Corporate Pattern", style:"grid", palette:["Blue","Navy"], scale:75, desc:"Blue + gray, clean grid"},
+  {name:"Botanical Pattern", style:"organicFlow", palette:["Green","Sage"], scale:85, desc:"Organic arrangement"},
+  {name:"Abstract Pattern", style:"randomGeometric", palette:["Vibrant","Rainbow"], scale:95, randRotation:true, randScale:true, desc:"Random scale, rotation, colorful"},
+  {name:"Seamless Textile", style:"honeycomb", palette:["Purple / Pink","Violet"], spacingMul:0.6, scale:70, desc:"Dense repeating textile look"}
+];
+
+</script>
+<script>
+/* ===========================================================
+   script.js — Motif: Custom Icon Seamless Pattern Generator
+   Vanilla JS, no framework, no backend, no external API.
+   =========================================================== */
+"use strict";
+
+/* ---------- deterministic PRNG (mulberry32) ---------- */
+function mulberry32(seed){
+  let a = seed >>> 0;
+  return function(){
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function randomSeed(){ return Math.floor(Math.random()*900000)+100000; }
+
+/* ---------- global state ---------- */
+const el = id => document.getElementById(id);
+
+const state = {
+  seed: randomSeed(),
+  iconUidCounter: 0,
+  icons: [],           // array of {uid, type:'svg'|'raster', svgText, img, w, h}
+  hasUserIcons: false,  // false while only the placeholder motif is loaded
+  activePaletteCategory: "Blue",
+  activePaletteName: "Royal Blue",
+  activePaletteColors: PALETTES["Blue"]["Royal Blue"].slice(),
+  customSlots: CUSTOM_SLOTS_DEFAULT.slice(),
+  theme: localStorage.getItem("motif-theme") || "dark"
+};
+
+const variantCache = new Map(); // key: `${iconUid}:${hex||'orig'}` -> Promise<HTMLImageElement|null>
+
+document.documentElement.setAttribute("data-theme", state.theme);
+el("btnTheme").textContent = state.theme === "dark" ? "🌙" : "☀️";
+
+/* ===========================================================
+   1. DEFAULT PLACEHOLDER ICON (used until the user uploads one)
+   =========================================================== */
+const PLACEHOLDER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+<path d="M50 6 L86 50 L50 94 L14 50 Z" fill="#6d5aff"/>
+<circle cx="50" cy="50" r="16" fill="#ffffff"/>
+</svg>`;
+
+/** Add an SVG icon to the working icon set (does NOT clear existing icons — use
+ *  resetIconsToPlaceholder() first if the whole set should be replaced). */
+function addIconFromSvgText(svgText){
+  const dims = getSvgDims(svgText);
+  const icon = {uid: ++state.iconUidCounter, type:"svg", svgText, w:dims.w, h:dims.h};
+  state.icons.push(icon);
+  return icon;
+}
+/** Add a raster icon to the working icon set. */
+function addIconFromRasterImage(img){
+  const icon = {uid: ++state.iconUidCounter, type:"raster", img, w:img.naturalWidth||img.width, h:img.naturalHeight||img.height};
+  state.icons.push(icon);
+  return icon;
+}
+/** Clear the whole icon set and fall back to the built-in placeholder motif. */
+function resetIconsToPlaceholder(){
+  state.icons = [];
+  state.hasUserIcons = false;
+  addIconFromSvgText(PLACEHOLDER_SVG);
+}
+/** Remove one icon from the set by its uid. Falls back to the placeholder if the set becomes empty. */
+function removeIconByUid(uid){
+  state.icons = state.icons.filter(ic => ic.uid !== uid);
+  if (state.icons.length === 0) resetIconsToPlaceholder();
+}
+function getSvgDims(svgText){
+  try{
+    const doc = new DOMParser().parseFromString(svgText, "image/svg+xml");
+    if (doc.querySelector("parsererror")) return {w:100,h:100};
+    const svg = doc.documentElement;
+    const vb = svg.getAttribute("viewBox");
+    if (vb){
+      const parts = vb.trim().split(/[\s,]+/).map(Number);
+      if (parts.length===4 && parts[2]>0 && parts[3]>0) return {w:parts[2], h:parts[3]};
+    }
+    const wAttr = svg.getAttribute("width"), hAttr = svg.getAttribute("height");
+    const wNum = (wAttr && !/%\s*$/.test(wAttr.trim())) ? parseFloat(wAttr) : NaN;
+    const hNum = (hAttr && !/%\s*$/.test(hAttr.trim())) ? parseFloat(hAttr) : NaN;
+    if (wNum>0 && hNum>0) return {w:wNum, h:hNum};
+    // No usable viewBox/width/height (e.g. a bare path-only export) — measure real geometry instead
+    // of guessing, so non-square icons don't come out stretched.
+    const bbox = measureSvgBBox(svg);
+    if (bbox) return bbox;
+    return {w:100,h:100};
+  }catch(e){ return {w:100,h:100}; }
+}
+
+/** Render a parsed <svg> element off-screen just long enough to read its true bounding box. */
+function measureSvgBBox(svgEl){
+  let imported = null;
+  try{
+    imported = document.importNode(svgEl, true);
+    imported.setAttribute("width", "200");
+    imported.setAttribute("height", "200");
+    imported.style.position = "fixed";
+    imported.style.left = "-99999px";
+    imported.style.top = "0";
+    imported.style.opacity = "0";
+    imported.style.pointerEvents = "none";
+    document.body.appendChild(imported);
+    const bb = imported.getBBox ? imported.getBBox() : null;
+    if (bb && bb.width>0 && bb.height>0) return {w:bb.width, h:bb.height};
+    return null;
+  }catch(e){ return null; }
+  finally{ if (imported && imported.parentNode) imported.parentNode.removeChild(imported); }
+}
+resetIconsToPlaceholder();
+
+/* ===========================================================
+   2. UPLOAD HANDLING — supports multiple icons at once
+   =========================================================== */
+const dropzone = el("dropzone");
+const fileInput = el("fileInput");
+const uploadPreview = el("uploadPreview");
+const iconGallery = el("iconGallery");
+const iconCountLabel = el("iconCount");
+const uploadHint = el("uploadHint");
+
+/** Read one File into either an SVG-text icon or a raster Image icon. Resolves to the
+ *  added icon object, or null if the file was rejected/unreadable. */
+function readFileAsIcon(file){
+  return new Promise(resolve => {
+    const okTypes = /\.(svg|png|jpe?g|webp)$/i;
+    if (!okTypes.test(file.name)){
+      setStatus(`Skipped "${file.name}" — unsupported file type. Please upload SVG, PNG, JPG or WEBP.`);
+      resolve(null); return;
+    }
+    if (file.size > 15*1024*1024){
+      setStatus(`Skipped "${file.name}" — file too large (max 15MB).`);
+      resolve(null); return;
+    }
+    const reader = new FileReader();
+    if (/\.svg$/i.test(file.name)){
+      reader.onload = () => resolve(addIconFromSvgText(reader.result));
+      reader.onerror = () => resolve(null);
+      reader.readAsText(file);
+    } else {
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => resolve(addIconFromRasterImage(img));
+        img.onerror = () => resolve(null);
+        img.src = reader.result;
+      };
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    }
+  });
+}
+
+/** Handle one or more newly-selected/dropped files. The very first successful upload
+ *  replaces the placeholder motif; every upload after that is ADDED to the existing set,
+ *  so the user can build up a mixed-icon pattern across several selections/drops. */
+async function handleFiles(fileList){
+  const files = Array.from(fileList || []);
+  if (!files.length) return;
+  if (!state.hasUserIcons){ state.icons = []; }
+  setStatus(files.length > 1 ? `Loading ${files.length} icons…` : "Loading icon…");
+  const results = await Promise.all(files.map(readFileAsIcon));
+  const added = results.filter(Boolean).length;
+  if (added > 0) state.hasUserIcons = true;
+  if (state.icons.length === 0) resetIconsToPlaceholder();
+  renderIconGallery();
+  scheduleRender();
+  if (added > 0){
+    setStatus(added === 1 ? "Icon added." : `${added} icons added.`);
+  } else if (files.length){
+    setStatus("No icons were added — check the file types above.");
+  }
+}
+
+function iconThumbSrc(icon){
+  if (icon.type === "svg") return URL.createObjectURL(new Blob([icon.svgText], {type:"image/svg+xml"}));
+  return icon.img.src;
+}
+
+function renderIconGallery(){
+  if (!state.hasUserIcons){
+    uploadPreview.classList.add("hidden");
+    uploadHint.classList.remove("hidden");
+    uploadHint.textContent = "No image uploaded yet — a placeholder motif is used so you can explore the tool.";
+    return;
+  }
+  uploadPreview.classList.remove("hidden");
+  uploadHint.classList.add("hidden");
+  iconCountLabel.textContent = state.icons.length === 1 ? "1 icon loaded" : `${state.icons.length} icons loaded — mixed into the pattern`;
+  iconGallery.innerHTML = "";
+  state.icons.forEach(icon => {
+    const thumb = document.createElement("div"); thumb.className = "icon-thumb";
+    const img = document.createElement("img"); img.src = iconThumbSrc(icon); img.alt = "Uploaded icon";
+    const removeBtn = document.createElement("button");
+    removeBtn.className = "icon-remove"; removeBtn.type = "button"; removeBtn.title = "Remove this icon";
+    removeBtn.textContent = "×";
+    removeBtn.addEventListener("click", () => {
+      removeIconByUid(icon.uid);
+      renderIconGallery();
+      scheduleRender();
+    });
+    thumb.appendChild(img); thumb.appendChild(removeBtn);
+    iconGallery.appendChild(thumb);
+  });
+}
+
+fileInput.addEventListener("change", e => { handleFiles(e.target.files); fileInput.value = ""; });
+["dragenter","dragover"].forEach(ev => dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.add("dragover"); }));
+["dragleave","drop"].forEach(ev => dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.remove("dragover"); }));
+dropzone.addEventListener("drop", e => handleFiles(e.dataTransfer.files));
+
+el("btnRemoveImage").addEventListener("click", () => {
+  resetIconsToPlaceholder();
+  renderIconGallery();
+  scheduleRender();
+});
+
+/* ===========================================================
+   3. COLORIZATION — recoloring SVG / raster icons
+   =========================================================== */
+function recolorSvgString(svgText, hex){
+  try{
+    const doc = new DOMParser().parseFromString(svgText, "image/svg+xml");
+    if (doc.querySelector("parsererror")) return svgText; // malformed file — leave untouched rather than break it
+    const svg = doc.documentElement;
+    let touchedAny = false;
+
+    const recolorNode = (node) => {
+      const fill = node.getAttribute("fill");
+      if (fill && fill !== "none"){ node.setAttribute("fill", hex); touchedAny = true; }
+      const stroke = node.getAttribute("stroke");
+      if (stroke && stroke !== "none"){ node.setAttribute("stroke", hex); touchedAny = true; }
+      const style = node.getAttribute("style");
+      if (style && /fill\s*:\s*(?!none)/i.test(style)){
+        node.setAttribute("style", style.replace(/fill\s*:\s*[^;]+/gi, "fill:"+hex));
+        touchedAny = true;
+      }
+    };
+
+    // 1) presentation attributes / inline style="" (the common "flat" SVG export).
+    //    Outline icon sets (Feather/Tabler/Lucide/Heroicons) typically set fill="none" and
+    //    stroke="currentColor" ONLY on the root <svg>, with plain child shapes underneath —
+    //    so the root itself must be checked too, not just its descendants.
+    recolorNode(svg);
+    svg.querySelectorAll("*").forEach(recolorNode);
+
+    // 2) <style> blocks with CSS classes — the standard Illustrator/Figma "CSS" export mode.
+    //    Rewrite color values only, so fill:none / fill:url(#gradient) stay untouched (no holes filled in).
+    svg.querySelectorAll("style").forEach(styleTag => {
+      const before = styleTag.textContent || "";
+      const after = before
+        .replace(/fill\s*:\s*(?!none|transparent|url\()[^;"'}\s][^;"'}]*/gi, "fill:"+hex)
+        .replace(/stroke\s*:\s*(?!none|transparent|url\()[^;"'}\s][^;"'}]*/gi, "stroke:"+hex);
+      if (after !== before){ styleTag.textContent = after; touchedAny = true; }
+    });
+
+    // 3) Nothing explicit anywhere — icon relies on the SVG default (implicit black fill).
+    if (!touchedAny) svg.setAttribute("fill", hex);
+
+    return new XMLSerializer().serializeToString(svg);
+  }catch(e){ return svgText; }
+}
+
+/** Force an explicit width/height on an SVG string so the browser rasterizes it at a
+ *  sharp resolution instead of a low default — keeps large exports crisp, not blurry. */
+function withRasterDimensions(svgText, targetPx, icon){
+  try{
+    const doc = new DOMParser().parseFromString(svgText, "image/svg+xml");
+    if (doc.querySelector("parsererror")) return svgText;
+    const svg = doc.documentElement;
+    let vb = svg.getAttribute("viewBox");
+    if (!vb){
+      const w = (icon && icon.w) || 100;
+      const h = (icon && icon.h) || 100;
+      svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+      vb = svg.getAttribute("viewBox");
+    }
+    const parts = vb.trim().split(/[\s,]+/).map(Number);
+    const aspect = (parts[2] && parts[3]) ? parts[2]/parts[3] : 1;
+    const w = aspect >= 1 ? targetPx : Math.round(targetPx*aspect);
+    const h = aspect >= 1 ? Math.round(targetPx/aspect) : targetPx;
+    svg.setAttribute("width", w);
+    svg.setAttribute("height", h);
+    return new XMLSerializer().serializeToString(svg);
+  }catch(e){ return svgText; }
+}
+
+/** Resolve every class-based fill/stroke declared in a <style> block into a literal
+ *  presentation attribute on each matching element (added only where the element doesn't
+ *  already set that property itself). This must run before an icon is ever used as an <img>
+ *  source (see rasterizeVariant): browsers reliably apply an internal <style> block when an
+ *  SVG is parsed as a live *document* — which is exactly how the exported .svg file behaves
+ *  when opened in a browser or in Illustrator — but when the SAME SVG is instead loaded purely
+ *  as an <img> source (which is what the on-screen preview and every PNG/JPG export do under
+ *  the hood), class-based CSS styling is NOT reliably applied across browsers: the element
+ *  silently falls back to the SVG spec's default fill, which is black. This affects every
+ *  color mode, not just "original" — recolorSvgString() only rewrites the color *inside* the
+ *  <style> rule, so a recolored icon still depends on that same class being applied. Baking
+ *  the resolved color onto each element as a plain attribute sidesteps the class entirely,
+ *  since presentation attributes always work in both contexts. */
+function inlineClassFillStroke(svgText){
+  try{
+    const doc = new DOMParser().parseFromString(svgText, "image/svg+xml");
+    if (doc.querySelector("parsererror")) return svgText;
+    const svg = doc.documentElement;
+    const rules = {}; // ".cls" name -> {fill, stroke}
+    svg.querySelectorAll("style").forEach(styleTag => {
+      const css = styleTag.textContent || "";
+      const ruleRe = /\.([A-Za-z_][\w-]*)\s*\{([^}]*)\}/g;
+      let m;
+      while ((m = ruleRe.exec(css))){
+        const cls = m[1], body = m[2];
+        const fillM = /fill\s*:\s*([^;]+)/i.exec(body);
+        const strokeM = /stroke\s*:\s*([^;]+)/i.exec(body);
+        rules[cls] = rules[cls] || {};
+        if (fillM) rules[cls].fill = fillM[1].trim();
+        if (strokeM) rules[cls].stroke = strokeM[1].trim();
+      }
+    });
+    if (Object.keys(rules).length === 0) return svgText;
+
+    const applyToNode = (node) => {
+      const classAttr = node.getAttribute && node.getAttribute("class");
+      if (!classAttr) return;
+      classAttr.trim().split(/\s+/).forEach(cls => {
+        const rule = rules[cls];
+        if (!rule) return;
+        if (rule.fill && !node.getAttribute("fill")) node.setAttribute("fill", rule.fill);
+        if (rule.stroke && !node.getAttribute("stroke")) node.setAttribute("stroke", rule.stroke);
+      });
+    };
+    applyToNode(svg);
+    svg.querySelectorAll("*").forEach(applyToNode);
+
+    return new XMLSerializer().serializeToString(svg);
+  }catch(e){ return svgText; }
+}
+
+/** Rasterize (and optionally recolor) one icon from the icon set, identified by its index
+ *  in state.icons. Cached per icon identity (uid) + color, so switching colors or mixing
+ *  several icons never re-renders a variant that's already been produced. */
+function rasterizeVariant(iconIndex, hex){
+  const icon = state.icons[iconIndex];
+  if (!icon) return Promise.resolve(null);
+  const key = `${icon.uid}:${hex || "orig"}`;
+  if (variantCache.has(key)) return variantCache.get(key);
+  const promise = new Promise(resolve => {
+    if (icon.type === "svg"){
+      let svgStr = hex ? recolorSvgString(icon.svgText, hex) : icon.svgText;
+      svgStr = inlineClassFillStroke(svgStr);
+      svgStr = withRasterDimensions(svgStr, 1024, icon);
+      const blob = new Blob([svgStr], {type:"image/svg+xml"});
+      const url = URL.createObjectURL(blob);
+      const img = new Image();
+      img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+      img.src = url;
+    } else {
+      if (!hex){ resolve(icon.img); return; }
+      const c = document.createElement("canvas");
+      const maxDim = 512;
+      const scale = Math.min(1, maxDim / Math.max(icon.w, icon.h));
+      c.width = Math.max(1, Math.round(icon.w*scale));
+      c.height = Math.max(1, Math.round(icon.h*scale));
+      const cx = c.getContext("2d");
+      cx.drawImage(icon.img, 0, 0, c.width, c.height);
+      cx.globalCompositeOperation = "source-in";
+      cx.fillStyle = hex;
+      cx.fillRect(0, 0, c.width, c.height);
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.src = c.toDataURL("image/png");
+    }
+  });
+  variantCache.set(key, promise);
+  return promise;
+}
+
+/** Pick which icon (index into state.icons) a given placement instance should use. */
+function pickIconIndex(idx, rng, distribution){
+  const n = state.icons.length;
+  if (n <= 1) return 0;
+  if (distribution === "random") return Math.floor(rng()*n);
+  return idx % n; // "sequential" — cycle through the uploaded icons in order
+}
+
+/** Determine list of colors needed for current colorization mode. */
+function activeColorPlan(){
+  const mode = el("colorMode").value;
+  if (mode === "original") return {mode, colors:[null]};
+  if (mode === "single") return {mode, colors:[el("singleColor").value]};
+  if (mode === "duotone") return {mode, colors:[el("duotoneA").value, el("duotoneB").value]};
+  if (mode === "gradient") return {mode, colors:[el("gradientA").value, el("gradientB").value]};
+  if (mode === "palette" || mode === "randomPalette") return {mode, colors: state.activePaletteColors.slice()};
+  return {mode:"original", colors:[null]};
+}
+function lerpColor(hexA, hexB, t){
+  const a = hexToRgb(hexA), b = hexToRgb(hexB);
+  const r = Math.round(a.r + (b.r-a.r)*t), g = Math.round(a.g + (b.g-a.g)*t), bl = Math.round(a.b + (b.b-a.b)*t);
+  return rgbToHex(r,g,bl);
+}
+function hexToRgb(hex){ const n = parseInt(hex.replace("#",""),16); return {r:(n>>16)&255, g:(n>>8)&255, b:n&255}; }
+function rgbToHex(r,g,b){ return "#" + [r,g,b].map(v=>Math.max(0,Math.min(255,v)).toString(16).padStart(2,"0")).join(""); }
+
+/* ===========================================================
+   4. PATTERN LAYOUT GENERATORS
+   All generators return items in normalized tile space [0,1)x[0,1)
+   with {x,y,rotExtra,scaleMul}. Seamlessness is guaranteed later
+   by wrap-drawing each item at the 8 neighbouring tile offsets.
+   =========================================================== */
+function triWave(t){ t = t - Math.floor(t); return t<0.5 ? t*4-1 : 3-t*4; } // -1..1 triangle wave
+
+const GENERATORS = {
+  grid(spacing, rng, p){
+    const cols = Math.max(1, Math.round(1/spacing)), rows = Math.max(1, Math.round(1/spacing));
+    const items = [];
+    for (let j=0;j<rows;j++) for (let i=0;i<cols;i++){
+      let rotExtra = 0;
+      if (p.autoRotate) rotExtra = ((i*37 + j*53) % 360);
+      items.push({x:(i+0.5)/cols, y:(j+0.5)/rows, rotExtra, scaleMul:1});
+    }
+    return items;
+  },
+  offsetGrid(spacing, rng, p){
+    const cols = Math.max(1, Math.round(1/spacing)), rows = Math.max(1, Math.round(1/spacing));
+    const items = [];
+    for (let j=0;j<rows;j++) for (let i=0;i<cols;i++){
+      const xo = (j % 2 === 1) ? (p.drop||0.5)/cols : 0;
+      let x = ((i+0.5)/cols + xo) % 1;
+      let scaleMul = 1;
+      if (p.brick) scaleMul = 1; // brick handled via aspect at draw time using p.brick flag
+      items.push({x, y:(j+0.5)/rows, rotExtra:(p.rotateIcon||0), scaleMul, brick:!!p.brick});
+    }
+    return items;
+  },
+  halfDrop(spacing, rng, p){
+    const cols = Math.max(1, Math.round(1/spacing)), rows = Math.max(1, Math.round(1/spacing));
+    const items = [];
+    for (let i=0;i<cols;i++) for (let j=0;j<rows;j++){
+      const yo = (i % 2 === 1) ? 0.5/rows : 0;
+      const y = ((j+0.5)/rows + yo) % 1;
+      items.push({x:(i+0.5)/cols, y, rotExtra:0, scaleMul:1});
+    }
+    return items;
+  },
+  fullDrop(spacing, rng, p){
+    const cols = Math.max(1, Math.round(1/spacing)), rows = Math.max(1, Math.round(1/spacing));
+    const items = [];
+    for (let i=0;i<cols;i++){
+      const yo = (i * (1/rows) * 0.6) % 1;
+      for (let j=0;j<rows;j++){
+        const y = ((j+0.5)/rows + yo) % 1;
+        items.push({x:(i+0.5)/cols, y, rotExtra:0, scaleMul:1});
+      }
+    }
+    return items;
+  },
+  jitterGrid(spacing, rng, p){
+    const cols = Math.max(1, Math.round(1/spacing)), rows = Math.max(1, Math.round(1/spacing));
+    const items = [];
+    const j0 = p.jitter||0.35;
+    for (let j=0;j<rows;j++) for (let i=0;i<cols;i++){
+      const jx = (rng()*2-1) * j0 / cols;
+      const jy = (rng()*2-1) * j0 / rows;
+      const rotExtra = p.rotateStrong ? rng()*360 : (rng()*2-1)*15;
+      const scaleMul = p.sizeVar ? (0.7 + rng()*0.7) : 1;
+      items.push({x:((i+0.5)/cols + jx + 1)%1, y:((j+0.5)/rows + jy + 1)%1, rotExtra, scaleMul});
+    }
+    return items;
+  },
+  shearGrid(spacing, rng, p){
+    const cols = Math.max(1, Math.round(1/spacing)), rows = Math.max(1, Math.round(1/spacing));
+    const items = [];
+    for (let j=0;j<rows;j++) for (let i=0;i<cols;i++){
+      const x = (i+0.5)/cols;
+      const y = ((j+0.5)/rows + x*(p.shear||0.3)) % 1;
+      const rotExtra = p.altRotate ? ((i+j)%2 ? p.altRotate : -p.altRotate) : 0;
+      items.push({x, y, rotExtra, scaleMul:1});
+    }
+    return items;
+  },
+  zigzag(spacing, rng, p){
+    const cols = Math.max(1, Math.round(1/spacing)), rows = Math.max(1, Math.round(1/spacing));
+    const items = [];
+    for (let j=0;j<rows;j++) for (let i=0;i<cols;i++){
+      const y = ((j+0.5)/rows + triWave(i/cols*2)*0.18/rows) % 1;
+      items.push({x:(i+0.5)/cols, y:(y+1)%1, rotExtra:0, scaleMul:1});
+    }
+    return items;
+  },
+  wave(spacing, rng, p){
+    const cols = Math.max(1, Math.round(1/spacing)), rows = Math.max(1, Math.round(1/spacing));
+    const items = [];
+    const freq = p.freq||2, amp = p.amp||0.06, jitter = p.jitter||0;
+    for (let j=0;j<rows;j++) for (let i=0;i<cols;i++){
+      const x = (i+0.5)/cols;
+      let y = ((j+0.5)/rows + Math.sin(x*Math.PI*2*freq)*amp) % 1;
+      if (jitter){ y += (rng()*2-1)*jitter/rows; }
+      items.push({x, y:(y+1)%1, rotExtra:0, scaleMul:1});
+    }
+    return items;
+  },
+  ring(spacing, rng, p){
+    const items = [];
+    const step = spacing*1.1;
+    const maxR = 0.72;
+    let ringIndex = 0;
+    for (let r=step*0.6; r<maxR; r+=step, ringIndex++){
+      let n = Math.max(3, Math.round((2*Math.PI*r)/spacing));
+      if (p.symmetry) n = p.symmetry;
+      const scaleMul = p.scaleDecay ? Math.max(0.4, 1 - ringIndex*0.12) : 1;
+      for (let k=0;k<n;k++){
+        const theta = (k/n)*Math.PI*2 + (ringIndex%2)*(Math.PI/n);
+        const x = 0.5 + Math.cos(theta)*r;
+        const y = 0.5 + Math.sin(theta)*r;
+        const rotExtra = p.rotateOut ? (theta*180/Math.PI + 90) : 0;
+        items.push({x:((x%1)+1)%1, y:((y%1)+1)%1, rotExtra, scaleMul});
+      }
+    }
+    return items;
+  },
+  spiral(spacing, rng, p){
+    const items = [];
+    const turns = 4.5;
+    const a = 0.62 / (turns*Math.PI*2);
+    const step = spacing*6;
+    for (let t=0.001; t<turns*Math.PI*2; t+=step*2.2){
+      const r = a*t;
+      const x = 0.5 + Math.cos(t)*r;
+      const y = 0.5 + Math.sin(t)*r;
+      items.push({x:((x%1)+1)%1, y:((y%1)+1)%1, rotExtra:(t*180/Math.PI), scaleMul:1});
+    }
+    return items;
+  },
+  hex(spacing, rng, p){
+    const items = [];
+    const cols = Math.max(1, Math.round(1/spacing));
+    const rowSpacing = spacing*0.866;
+    const rows = Math.max(1, Math.round(1/rowSpacing));
+    for (let j=0;j<rows;j++) for (let i=0;i<cols;i++){
+      const xo = (j % 2 === 1) ? 0.5/cols : 0;
+      const x = ((i+0.5)/cols + xo) % 1;
+      const y = (j+0.5)/rows;
+      items.push({x, y, rotExtra:(p.rotateIcon||0), scaleMul:1});
+    }
+    return items;
+  },
+  checker(spacing, rng, p){
+    const cols = Math.max(1, Math.round(1/spacing)), rows = Math.max(1, Math.round(1/spacing));
+    const items = [];
+    for (let j=0;j<rows;j++) for (let i=0;i<cols;i++){
+      if ((i+j)%2===1) continue;
+      items.push({x:(i+0.5)/cols, y:(j+0.5)/rows, rotExtra:0, scaleMul:1});
+    }
+    return items;
+  }
+};
+
+function generatePlacements(styleValue, spacingNorm, rng, extraParams){
+  const def = PATTERN_STYLES.find(s => s.v === styleValue) || PATTERN_STYLES[0];
+  const p = Object.assign({}, def.p, extraParams||{});
+  const sp = spacingNorm * (p.spacingMul || 1);
+  const gen = GENERATORS[def.algo] || GENERATORS.grid;
+  return gen(Math.max(0.012, sp), rng, p);
+}
+
+/* ===========================================================
+   5. READ UI -> RENDER PARAMS
+   =========================================================== */
+const SIZE_MUL = {small:0.6, medium:1, large:1.6, xl:2.4};
+const BASELINE = 1000;
+
+function readParams(){
+  return {
+    scale: +el("scale").value,
+    rotation: +el("rotation").value,
+    opacity: +el("opacity").value,
+    spacing: +el("spacing").value,
+    offsetX: +el("offsetX").value,
+    offsetY: +el("offsetY").value,
+    randRotation: el("randRotation").checked,
+    randScale: el("randScale").checked,
+    randOpacity: el("randOpacity").checked,
+    randPosition: el("randPosition").checked,
+    flipH: el("flipH").checked,
+    flipV: el("flipV").checked,
+    iconDistribution: el("iconDistribution").value,
+    colorMode: el("colorMode").value,
+    iconTransform: el("iconTransform").value,
+    shadowMode: el("shadowMode").value,
+    glowMode: el("glowMode").value,
+    glowColor: el("glowColor").value,
+    shadowOffX: +el("shadowOffX").value,
+    shadowOffY: +el("shadowOffY").value,
+    patternStyle: el("patternStyle").value,
+    density: +el("density").value,
+    patternSize: el("patternSize").value,
+    patternRotation: +el("patternRotation").value,
+    seamlessMode: el("seamlessMode").value,
+    bgType: el("bgType").value,
+    bgColorA: el("bgColorA").value,
+    bgColorB: el("bgColorB").value
+  };
+}
+
+/* ===========================================================
+   6. CORE RENDER — draws ONE seamless tile to a given canvas
+   =========================================================== */
+function paintBackground(ctx, W, H, params){
+  ctx.clearRect(0,0,W,H);
+  if (params.bgType === "transparent") return;
+  if (params.bgType === "solid"){
+    ctx.fillStyle = params.bgColorA; ctx.fillRect(0,0,W,H); return;
+  }
+  if (params.bgType === "gradient"){
+    const g = ctx.createLinearGradient(0,0,W,H);
+    g.addColorStop(0, params.bgColorA); g.addColorStop(1, params.bgColorB);
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,H); return;
+  }
+  if (params.bgType === "twoColor"){
+    ctx.fillStyle = params.bgColorA; ctx.fillRect(0,0,W,H/2);
+    ctx.fillStyle = params.bgColorB; ctx.fillRect(0,H/2,W,H/2); return;
+  }
+}
+
+function applyShadowGlow(ctx, params){
+  ctx.shadowBlur = 0; ctx.shadowColor = "transparent"; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0;
+  if (params.glowMode !== "None"){
+    const blurMap = {Soft:14, Neon:26, Strong:40};
+    ctx.shadowColor = params.glowColor;
+    ctx.shadowBlur = blurMap[params.glowMode] || 16;
+  } else if (params.shadowMode !== "None"){
+    const blurMap = {Soft:6, Medium:14, Strong:26};
+    ctx.shadowColor = "rgba(0,0,0,0.45)";
+    ctx.shadowBlur = blurMap[params.shadowMode] || 10;
+    ctx.shadowOffsetX = params.shadowOffX;
+    ctx.shadowOffsetY = params.shadowOffY;
+  }
+}
+
+async function renderTileToCanvas(canvas, W, H, seedOverride){
+  const params = readParams();
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext("2d");
+  paintBackground(ctx, W, H, params);
+
+  const plan = activeColorPlan();
+  const nIcons = Math.max(1, state.icons.length);
+  // Precompute every (icon × color) combo up front — the combo count stays small
+  // (icons × colors) no matter how many placement instances the pattern ends up with.
+  const variantMatrix = await Promise.all(
+    Array.from({length:nIcons}, (_,ii) => Promise.all(plan.colors.map(hex => rasterizeVariant(ii, hex))))
+  );
+  if (variantMatrix.every(row => row.every(v => !v))){
+    setStatus("This icon could not be read — it may be malformed. Try re-exporting it, or use a PNG/WEBP instead.");
+    return {W,H,itemCount:0};
+  }
+
+  const rng = mulberry32(seedOverride!==undefined ? seedOverride : state.seed);
+
+  const spacingNorm = Math.max(4, params.spacing) / BASELINE;
+  const sizeMul = SIZE_MUL[params.patternSize] || 1;
+  const items = generatePlacements(params.patternStyle, spacingNorm * (1.7 - params.density/100*1.3) / sizeMul, rng, {});
+
+  const baseIconFrac = 0.11 * (params.scale/100) * sizeMul; // fraction of tile size
+
+  const xOffsets = params.seamlessMode.includes("x") ? [-1,0,1] : [0];
+  const yOffsets = params.seamlessMode.includes("y") ? [-1,0,1] : [0];
+
+  applyShadowGlow(ctx, params);
+  const patRotRad = (params.patternRotation||0) * Math.PI/180;
+  const cx0 = W/2, cy0 = H/2;
+
+  items.forEach((it, idx) => {
+    // per-instance randomization
+    let scaleMul = it.scaleMul||1;
+    if (params.randScale) scaleMul *= (0.5 + rng()*1.1);
+    let rotExtra = it.rotExtra||0;
+    if (params.randRotation) rotExtra += rng()*360;
+    let opacity = params.opacity/100;
+    if (params.randOpacity) opacity *= (0.35 + rng()*0.65);
+    let px = it.x, py = it.y;
+    if (params.randPosition){ px += (rng()*2-1)*0.04; py += (rng()*2-1)*0.04; }
+
+    // which uploaded icon this instance uses
+    const iconIdx = pickIconIndex(idx, rng, params.iconDistribution);
+    const icon = state.icons[iconIdx] || state.icons[0];
+    const variantImgs = variantMatrix[iconIdx] || variantMatrix[0];
+
+    // color for this instance
+    let img;
+    if (plan.mode === "original") img = variantImgs[0];
+    else if (plan.mode === "single") img = variantImgs[0];
+    else if (plan.mode === "duotone") img = variantImgs[idx % 2];
+    else if (plan.mode === "gradient"){
+      const t = (px + py)/2;
+      // pick nearest precomputed stop by mixing at draw time isn't possible (variant is prebaked),
+      // so approximate using the two prebaked ends weighted by index parity + position
+      img = variantImgs[t < 0.5 ? 0 : 1];
+    } else if (plan.mode === "palette") img = variantImgs[idx % variantImgs.length];
+    else if (plan.mode === "randomPalette") img = variantImgs[Math.floor(rng()*variantImgs.length)];
+    if (!img) return;
+
+    const iconAspect = icon.h ? (icon.w/icon.h) : 1;
+    let w = W * baseIconFrac * scaleMul;
+    let h = w / iconAspect;
+    if (it.brick) { w *= 1.3; h *= 0.75; }
+
+    xOffsets.forEach(ox => yOffsets.forEach(oy => {
+      const cx = (px + ox) * W + params.offsetX;
+      const cy = (py + oy) * H + params.offsetY;
+      // cull far-off items for perf
+      if (cx < -w*1.5 || cx > W+w*1.5 || cy < -h*1.5 || cy > H+h*1.5) return;
+      ctx.save();
+      // rotate whole pattern around canvas centre first
+      if (patRotRad){
+        const dx = cx-cx0, dy = cy-cy0;
+        const rcx = cx0 + dx*Math.cos(patRotRad) - dy*Math.sin(patRotRad);
+        const rcy = cy0 + dx*Math.sin(patRotRad) + dy*Math.cos(patRotRad);
+        ctx.translate(rcx, rcy);
+      } else {
+        ctx.translate(cx, cy);
+      }
+      ctx.rotate(((params.rotation + rotExtra + patRotRad*180/Math.PI)) * Math.PI/180);
+      ctx.scale(params.flipH ? -1:1, params.flipV ? -1:1);
+      ctx.globalAlpha = Math.max(0, Math.min(1, opacity));
+      if (params.iconTransform === "transparent") ctx.globalAlpha *= 0.5;
+      if (params.iconTransform === "softBlur") ctx.filter = "blur(3px)"; else ctx.filter = "none";
+      ctx.drawImage(img, -w/2, -h/2, w, h);
+      ctx.restore();
+    }));
+  });
+  ctx.shadowBlur = 0;
+  return {W,H,itemCount:items.length};
+}
+
+/* ===========================================================
+   7. PREVIEW PIPELINE
+   =========================================================== */
+const mainCanvas = el("mainCanvas");
+const tileCanvas = el("tileCanvas");
+let renderQueued = false;
+
+function scheduleRender(){
+  if (renderQueued) return;
+  renderQueued = true;
+  requestAnimationFrame(async () => {
+    renderQueued = false;
+    await doRender();
+  });
+}
+
+async function doRender(){
+  setStatus("Rendering…");
+  await renderTileToCanvas(mainCanvas, 700, 700);
+  paintTilePreview();
+  el("seedDisplay").textContent = state.seed;
+  updateFilenamePreview();
+  setStatus("Ready.");
+}
+
+function paintTilePreview(){
+  const tctx = tileCanvas.getContext("2d");
+  tileCanvas.width = 700; tileCanvas.height = 700;
+  tctx.clearRect(0,0,700,700);
+  const cell = 700/3;
+  for (let j=0;j<3;j++) for (let i=0;i<3;i++){
+    tctx.drawImage(mainCanvas, i*cell, j*cell, cell, cell);
+  }
+}
+
+function setStatus(msg){ el("statusText").textContent = msg; }
+
+/* ===========================================================
+   8. UI WIRING — inputs that trigger re-render
+   =========================================================== */
+const LIVE_INPUT_IDS = ["scale","rotation","opacity","spacing","offsetX","offsetY",
+  "randRotation","randScale","randOpacity","randPosition","flipH","flipV","iconDistribution",
+  "colorMode","singleColor","duotoneA","duotoneB","gradientA","gradientB",
+  "iconTransform","shadowMode","glowMode","glowColor","shadowOffX","shadowOffY",
+  "patternStyle","density","patternSize","patternRotation","seamlessMode",
+  "bgType","bgColorA","bgColorB"];
+
+const VAL_DISPLAY = {
+  scale:v=>v+"%", rotation:v=>v+"°", opacity:v=>v+"%", spacing:v=>v+"px", density:v=>v+"%",
+  offsetX:v=>v, offsetY:v=>v
+};
+
+LIVE_INPUT_IDS.forEach(id => {
+  const node = el(id);
+  if (!node) return;
+  node.addEventListener("input", () => {
+    if (VAL_DISPLAY[id] && el("val"+id.charAt(0).toUpperCase()+id.slice(1))){
+      el("val"+id.charAt(0).toUpperCase()+id.slice(1)).textContent = VAL_DISPLAY[id](node.value);
+    }
+    syncColorRows();
+    scheduleRender();
+  });
+});
+
+function syncColorRows(){
+  const mode = el("colorMode").value;
+  el("singleColorRow").classList.toggle("hidden", mode!=="single");
+  el("duotoneRow").classList.toggle("hidden", mode!=="duotone");
+  el("gradientRow").classList.toggle("hidden", mode!=="gradient");
+}
+
+/* ---- populate pattern style select ---- */
+(function populateStyles(){
+  const sel = el("patternStyle");
+  let lastGroup = null;
+  PATTERN_STYLES.forEach(s => {
+    if (s.group !== lastGroup){
+      const og = document.createElement("optgroup"); og.label = s.group;
+      sel.appendChild(og); lastGroup = s.group;
+    }
+    const opt = document.createElement("option");
+    opt.value = s.v; opt.textContent = s.label;
+    sel.lastElementChild.appendChild(opt);
+  });
+  sel.value = "grid";
+})();
+
+/* ---- palette UI ---- */
+function populatePaletteCategory(){
+  const sel = el("paletteCategory");
+  sel.innerHTML = "";
+  Object.keys(PALETTES).forEach(cat => {
+    const opt = document.createElement("option"); opt.value = cat; opt.textContent = cat;
+    sel.appendChild(opt);
+  });
+  sel.value = state.activePaletteCategory;
+}
+function paletteNamesFor(cat){ return Object.keys(PALETTES[cat]); }
+function renderPaletteSwatches(){
+  const cat = el("paletteCategory").value;
+  const grid = el("paletteSwatches");
+  grid.innerHTML = "";
+  paletteNamesFor(cat).forEach(name => {
+    const colors = PALETTES[cat][name];
+    const sw = document.createElement("div");
+    sw.className = "swatch" + (name===state.activePaletteName ? " active":"");
+    sw.title = name;
+    sw.style.background = `linear-gradient(135deg, ${colors[0]}, ${colors[Math.floor(colors.length/2)]}, ${colors[colors.length-1]})`;
+    sw.addEventListener("click", () => {
+      state.activePaletteCategory = cat; state.activePaletteName = name;
+      state.activePaletteColors = colors.slice();
+      renderPaletteSwatches();
+      // Picking a palette is a clear signal of intent — make it actually visible right away,
+      // instead of silently doing nothing while Colorization is still set to "Original".
+      if (el("colorMode").value !== "randomPalette") el("colorMode").value = "palette";
+      syncColorRows();
+      scheduleRender();
+    });
+    grid.appendChild(sw);
+  });
+}
+el("paletteCategory").addEventListener("change", renderPaletteSwatches);
+populatePaletteCategory(); renderPaletteSwatches();
+
+function renderCustomSlots(){
+  const grid = el("customSlots"); grid.innerHTML = "";
+  state.customSlots.forEach((hex, i) => {
+    const wrap = document.createElement("div"); wrap.className = "swatch-slot";
+    const box = document.createElement("div"); box.className = "swatch"; box.style.background = hex;
+    const input = document.createElement("input"); input.type = "color"; input.value = hex;
+    input.addEventListener("input", () => {
+      state.customSlots[i] = input.value; box.style.background = input.value;
+    });
+    input.addEventListener("change", () => {
+      state.activePaletteColors = state.customSlots.slice();
+      state.activePaletteName = "Custom"; state.activePaletteCategory = "Custom";
+      if (el("colorMode").value !== "randomPalette") el("colorMode").value = "palette";
+      syncColorRows();
+      scheduleRender();
+    });
+    wrap.appendChild(box); wrap.appendChild(input); grid.appendChild(wrap);
+  });
+}
+renderCustomSlots();
+
+el("btnRandomPalette").addEventListener("click", () => {
+  const cats = Object.keys(PALETTES);
+  const cat = cats[Math.floor(Math.random()*cats.length)];
+  const names = paletteNamesFor(cat);
+  const name = names[Math.floor(Math.random()*names.length)];
+  state.activePaletteCategory = cat; state.activePaletteName = name;
+  state.activePaletteColors = PALETTES[cat][name].slice();
+  el("paletteCategory").value = cat; renderPaletteSwatches();
+  if (el("colorMode").value !== "randomPalette") el("colorMode").value = "palette";
+  syncColorRows();
+  scheduleRender();
+});
+el("btnSavePalette").addEventListener("click", () => {
+  localStorage.setItem("motif-saved-palette", JSON.stringify({cat:state.activePaletteCategory, name:state.activePaletteName, colors:state.activePaletteColors}));
+  setStatus("Palette saved.");
+});
+el("btnLoadPalette").addEventListener("click", () => {
+  const raw = localStorage.getItem("motif-saved-palette");
+  if (!raw){ setStatus("No saved palette found."); return; }
+  const d = JSON.parse(raw);
+  state.activePaletteCategory = d.cat; state.activePaletteName = d.name; state.activePaletteColors = d.colors;
+  if (PALETTES[d.cat]) el("paletteCategory").value = d.cat;
+  renderPaletteSwatches();
+  if (el("colorMode").value !== "randomPalette") el("colorMode").value = "palette";
+  syncColorRows();
+  scheduleRender();
+  setStatus("Palette loaded.");
+});
+
+/* ---- canvas size / presets ---- */
+function populateCanvasPresets(){
+  const sel = el("canvasPreset"); sel.innerHTML = "";
+  const optNone = document.createElement("option"); optNone.value=""; optNone.textContent="Custom size…";
+  sel.appendChild(optNone);
+  Object.keys(CANVAS_PRESETS).forEach(cat => {
+    const og = document.createElement("optgroup"); og.label = cat;
+    CANVAS_PRESETS[cat].forEach(p => {
+      const opt = document.createElement("option");
+      opt.value = JSON.stringify({w:p.w,h:p.h}); opt.textContent = p.label;
+      og.appendChild(opt);
+    });
+    sel.appendChild(og);
+  });
+}
+populateCanvasPresets();
+el("canvasPreset").addEventListener("change", () => {
+  const v = el("canvasPreset").value;
+  if (!v) return;
+  const {w,h} = JSON.parse(v);
+  el("canvasW").value = w; el("canvasH").value = h;
+  updateFilenamePreview();
+});
+["canvasW","canvasH"].forEach(id => el(id).addEventListener("input", updateFilenamePreview));
+el("btnMicrostockSquare").addEventListener("click", () => { el("canvasW").value=4000; el("canvasH").value=4000; updateFilenamePreview(); });
+el("btnMicrostockLandscape").addEventListener("click", () => { el("canvasW").value=6000; el("canvasH").value=4000; updateFilenamePreview(); });
+el("btnMicrostockPortrait").addEventListener("click", () => { el("canvasW").value=4000; el("canvasH").value=6000; updateFilenamePreview(); });
+
+/* ===========================================================
+   9. RANDOMIZE + SEED + LOCKS
+   =========================================================== */
+function randomizePattern(){
+  const lockStyle = el("lockStyle").checked;
+  const lockPalette = el("lockPalette").checked;
+  const lockScale = el("lockScale").checked;
+  state.seed = randomSeed();
+
+  if (!lockStyle){
+    const styles = PATTERN_STYLES.map(s=>s.v);
+    el("patternStyle").value = styles[Math.floor(Math.random()*styles.length)];
+  }
+  if (!lockPalette) el("btnRandomPalette").click();
+  if (!lockScale){
+    el("scale").value = Math.round(60 + Math.random()*140);
+    el("valScale").textContent = el("scale").value+"%";
+    el("spacing").value = Math.round(10 + Math.random()*180);
+    el("valSpacing").textContent = el("spacing").value+"px";
+  }
+  el("rotation").value = Math.round(Math.random()*60-30);
+  el("valRotation").textContent = el("rotation").value+"°";
+  el("density").value = Math.round(30 + Math.random()*60);
+  el("valDensity").textContent = el("density").value+"%";
+  scheduleRender();
+}
+el("btnRandomizeTop").addEventListener("click", randomizePattern);
+
+el("btnRandomSeed").addEventListener("click", () => { state.seed = randomSeed(); el("seedInput").value = state.seed; scheduleRender(); });
+el("btnUseSeed").addEventListener("click", () => {
+  const v = parseInt(el("seedInput").value, 10);
+  if (!isNaN(v)){ state.seed = v; scheduleRender(); } else setStatus("Enter a valid numeric seed.");
+});
+el("btnCopySeed").addEventListener("click", async () => {
+  try{ await navigator.clipboard.writeText(String(state.seed)); setStatus("Seed copied to clipboard."); }
+  catch(e){ setStatus("Could not copy seed."); }
+});
+
+/* ===========================================================
+   10. THEME TOGGLE
+   =========================================================== */
+el("btnTheme").addEventListener("click", () => {
+  state.theme = state.theme === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", state.theme);
+  localStorage.setItem("motif-theme", state.theme);
+  el("btnTheme").textContent = state.theme === "dark" ? "🌙" : "☀️";
+});
+
+/* ===========================================================
+   11. PRESETS
+   =========================================================== */
+function populatePresetGrid(){
+  const grid = el("presetGrid"); grid.innerHTML = "";
+  PATTERN_PRESETS.forEach(preset => {
+    const card = document.createElement("div"); card.className = "preset-card";
+    card.innerHTML = `<b>${preset.name}</b><span>${preset.desc}</span>`;
+    card.addEventListener("click", () => applyPreset(preset));
+    grid.appendChild(card);
+  });
+}
+function applyPreset(preset){
+  const styleVal = preset.styleValue || preset.style;
+  if ([...el("patternStyle").options].some(o=>o.value===styleVal)) el("patternStyle").value = styleVal;
+  const [cat, name] = preset.palette;
+  if (PALETTES[cat] && PALETTES[cat][name]){
+    state.activePaletteCategory = cat; state.activePaletteName = name;
+    state.activePaletteColors = PALETTES[cat][name].slice();
+    el("paletteCategory").value = cat; renderPaletteSwatches();
+  }
+  if (preset.scale){ el("scale").value = preset.scale; el("valScale").textContent = preset.scale+"%"; }
+  if (preset.spacingMul){ const s = Math.round(40*preset.spacingMul); el("spacing").value=s; el("valSpacing").textContent=s+"px"; }
+  el("randRotation").checked = !!preset.randRotation;
+  el("randScale").checked = !!preset.randScale;
+  el("colorMode").value = "palette"; syncColorRows();
+  scheduleRender();
+}
+populatePresetGrid();
+
+/* ===========================================================
+   12. FILENAME + METADATA
+   =========================================================== */
+function slugify(s){ return String(s).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,""); }
+/** Human-readable label for whatever color mode is actually active — used for the filename
+ *  and metadata instead of always assuming the currently-loaded palette name applies. The
+ *  palette swatches stay loaded in the UI even while a different color mode (single/duotone/
+ *  gradient/original) is selected, so state.activePaletteName alone doesn't tell you what was
+ *  actually used to render the current pattern. */
+function activeColorLabel(){
+  const mode = el("colorMode").value;
+  if (mode === "palette" || mode === "randomPalette") return state.activePaletteName;
+  if (mode === "single") return "Single Color";
+  if (mode === "duotone") return "Duotone";
+  if (mode === "gradient") return "Gradient";
+  return "Original Colors";
+}
+function buildFilename(ext){
+  const w = el("canvasW").value, h = el("canvasH").value;
+  const styleLabel = (PATTERN_STYLES.find(s=>s.v===el("patternStyle").value)||{}).label || "pattern";
+  return `custom-icon-seamless-pattern-${slugify(activeColorLabel())}-${slugify(styleLabel)}-${w}x${h}-seed${state.seed}.${ext}`;
+}
+function updateFilenamePreview(){ el("filenamePreview").textContent = buildFilename("png"); }
+
+el("btnGenMetadata").addEventListener("click", () => {
+  const styleLabel = (PATTERN_STYLES.find(s=>s.v===el("patternStyle").value)||{}).label || "Pattern";
+  const paletteLabel = activeColorLabel();
+  const title = `Seamless Custom Icon ${styleLabel} Pattern Background — ${paletteLabel} Palette`;
+  const desc = `A high-resolution seamless repeating pattern background built from a custom icon, arranged in a ${styleLabel.toLowerCase()} layout with a ${paletteLabel.toLowerCase()} color palette. Tileable on all edges, suitable for backgrounds, wallpaper, packaging, textile and surface design projects.`;
+  const base = ["custom icon","seamless pattern","repeating pattern","background","decorative","surface pattern","wallpaper","textile","backdrop","texture","repeat","design element","vector pattern","tile","tileable","print design","packaging design","digital paper","scrapbook","fabric print"];
+  const dynamic = [styleLabel.toLowerCase(), paletteLabel.toLowerCase(), el("colorMode").value.replace(/([A-Z])/g," $1").toLowerCase(), el("bgType").value, "modern", "minimal", "abstract", "geometric", "colorful", "illustration", "icon set", "flat design", "contemporary", "clean", "stylish"];
+  const keywords = Array.from(new Set([...base, ...dynamic])).slice(0,50).join(", ");
+  el("metaTitle").value = title;
+  el("metaDesc").value = desc;
+  el("metaKeywords").value = keywords;
+});
+document.querySelectorAll(".copy-btn").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    const src = el(btn.dataset.copy);
+    try{ await navigator.clipboard.writeText(src.value); setStatus("Copied."); }
+    catch(e){ setStatus("Could not copy."); }
+  });
+});
+
+/* ===========================================================
+   13. EXPORT — PNG / JPG / SVG
+   =========================================================== */
+function triggerDownload(dataUrl, filename){
+  const a = document.createElement("a");
+  a.href = dataUrl; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+el("btnDownloadPng").addEventListener("click", async () => {
+  setStatus("Rendering full-resolution PNG…");
+  const W = Math.max(1,+el("canvasW").value), H = Math.max(1,+el("canvasH").value);
+  const off = document.createElement("canvas");
+  await renderTileToCanvas(off, W, H, state.seed);
+  triggerDownload(off.toDataURL("image/png"), buildFilename("png"));
+  setStatus("PNG downloaded.");
+});
+
+el("btnDownloadJpg").addEventListener("click", async () => {
+  const bg = el("bgType").value;
+  if (bg === "transparent") setStatus("Note: JPG does not support transparency — a solid background will be used.");
+  setStatus("Rendering full-resolution JPG…");
+  const W = Math.max(1,+el("canvasW").value), H = Math.max(1,+el("canvasH").value);
+  const off = document.createElement("canvas");
+  if (bg === "transparent") el("bgType").value = "solid";
+  await renderTileToCanvas(off, W, H, state.seed);
+  if (bg === "transparent") el("bgType").value = "transparent";
+  const q = (+el("jpgQuality").value)/100;
+  triggerDownload(off.toDataURL("image/jpeg", q), buildFilename("jpg"));
+  setStatus("JPG downloaded.");
+});
+
+el("btnDownloadSvg").addEventListener("click", async () => {
+  setStatus("Building SVG…");
+  const svgStr = await buildSvgExport();
+  const blob = new Blob([svgStr], {type:"image/svg+xml"});
+  triggerDownload(URL.createObjectURL(blob), buildFilename("svg"));
+  setStatus("SVG downloaded.");
+});
+
+/** Prefix every CSS class name (both class="" attributes and .selector{} rules) in an SVG
+ *  fragment string, so two differently-recolored copies of the same class-based icon never
+ *  fight over the same class name once they sit side by side in one exported document. */
+function namespaceSvgClasses(markup, prefix){
+  // 1) class="..." attributes anywhere — safe, this only matches inside class="" syntax.
+  markup = markup.replace(/class="([^"]+)"/g, (m, cls) =>
+    `class="${cls.trim().split(/\s+/).map(c => prefix + c).join(" ")}"`);
+  // 2) .selector{...} rules — ONLY inside <style>...</style> text content. Scoping this to
+  //    just the style blocks (rather than the whole markup) is essential: applying it globally
+  //    would also match ".w3." inside "http://www.w3.org/2000/svg" xmlns URIs that
+  //    XMLSerializer re-adds to every element, corrupting the namespace and making the whole
+  //    exported SVG render blank (the shapes end up in an unrecognized namespace).
+  markup = markup.replace(/(<style[^>]*>)([\s\S]*?)(<\/style>)/gi, (m, open, css, close) => {
+    const renamed = css.replace(/\.([A-Za-z_][\w-]*)(?=[\s,.:#\[{>~+]|$)/g, (mm, name) => "." + prefix + name);
+    return open + renamed + close;
+  });
+  return markup;
+}
+
+/** Prefix every id="..." declared in an SVG fragment (and every reference to those ids —
+ *  url(#id), href="#id"/xlink:href="#id", and #id{} CSS rules), for the same reason
+ *  namespaceSvgClasses() exists for class names: each icon x color variant becomes its own
+ *  <symbol>, and a source icon that styles itself via element ids (common in gradients,
+ *  clipPaths/masks, or an id-based "CSS" export from Illustrator/Figma) would otherwise leave
+ *  every color-variant symbol carrying the SAME id — producing duplicate ids in the final
+ *  document. Browsers tolerate duplicate ids silently, but Adobe Illustrator's SVG importer
+ *  does not, and will fail to open a file that contains them. */
+function namespaceSvgIds(markup, prefix){
+  const ids = new Set();
+  markup.replace(/\bid="([^"]+)"/g, (m, id) => { ids.add(id); return m; });
+  if (ids.size === 0) return markup;
+
+  // 1) id="..." attribute declarations.
+  markup = markup.replace(/\bid="([^"]+)"/g, (m, id) => ids.has(id) ? `id="${prefix}${id}"` : m);
+
+  // 2) References to those ids: url(#id) and href="#id" / xlink:href="#id".
+  ids.forEach(id => {
+    const esc = id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    markup = markup.replace(new RegExp(`url\\(#${esc}\\)`, "g"), `url(#${prefix}${id})`);
+    markup = markup.replace(new RegExp(`(href="#)${esc}(")`, "g"), `$1${prefix}${id}$2`);
+  });
+
+  // 3) #id{...} rules — scoped to <style> blocks only, same reasoning as the class regex above.
+  markup = markup.replace(/(<style[^>]*>)([\s\S]*?)(<\/style>)/gi, (m, open, css, close) => {
+    ids.forEach(id => {
+      const esc = id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      css = css.replace(new RegExp(`#${esc}(?=[\\s,.:#\\[{>~+]|$)`, "g"), `#${prefix}${id}`);
+    });
+    return open + css + close;
+  });
+
+  return markup;
+}
+
+/** Copy the original root <svg>'s inheritable presentation attributes (fill, stroke,
+ *  stroke-width, etc.) as an attribute string, so a <symbol> built from just the child
+ *  shapes can carry the same styling context the shapes relied on in the original file. */
+function extractRootPresentationAttrs(svgEl){
+  const skip = new Set(["xmlns","viewbox","width","height","id","x","y","version","baseprofile","preserveaspectratio","class"]);
+  let out = "";
+  Array.from(svgEl.attributes).forEach(a => {
+    const name = a.name.toLowerCase();
+    if (skip.has(name) || name.startsWith("xmlns:")) return;
+    out += ` ${a.name}="${String(a.value).replace(/"/g,"&quot;")}"`;
+  });
+  return out;
+}
+
+async function buildSvgExport(){
+  const params = readParams();
+  const W = Math.max(1,+el("canvasW").value), H = Math.max(1,+el("canvasH").value);
+  const plan = activeColorPlan();
+  const icons = state.icons.length ? state.icons : [state.icons[0]];
+  const rng = mulberry32(state.seed);
+  const spacingNorm = Math.max(4, params.spacing) / BASELINE;
+  const sizeMul = SIZE_MUL[params.patternSize] || 1;
+  const items = generatePlacements(params.patternStyle, spacingNorm * (1.7 - params.density/100*1.3) / sizeMul, rng, {});
+  const baseIconFrac = 0.11 * (params.scale/100) * sizeMul;
+  const xOffsets = params.seamlessMode.includes("x") ? [-1,0,1] : [0];
+  const yOffsets = params.seamlessMode.includes("y") ? [-1,0,1] : [0];
+
+  // background
+  let bgDefs = "";
+  let bgRect = "";
+  if (params.bgType === "solid") bgRect = `<rect width="${W}" height="${H}" fill="${params.bgColorA}"/>`;
+  else if (params.bgType === "gradient"){
+    bgDefs = `<defs><linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${params.bgColorA}"/><stop offset="1" stop-color="${params.bgColorB}"/></linearGradient></defs>`;
+    bgRect = `<rect width="${W}" height="${H}" fill="url(#bgGrad)"/>`;
+  }
+  else if (params.bgType === "twoColor") bgRect = `<rect width="${W}" height="${H/2}" fill="${params.bgColorA}"/><rect y="${H/2}" width="${W}" height="${H/2}" fill="${params.bgColorB}"/>`;
+
+  // Precompute one RAW markup template per (icon × color) combination. Note this is only
+  // a template — it gets copied and re-namespaced fresh into the document at every single
+  // placement below, instead of being defined once as a <symbol> and referenced many times
+  // via <use>. That duplication is intentional and is the actual fix for the Illustrator
+  // problem: Adobe Illustrator's SVG importer turns every <use href="#symbolId"> into a
+  // linked "Symbol" instance (visible in its Symbols panel) rather than an ordinary,
+  // independently-editable vector shape — even though a <symbol>+<use> pattern looks
+  // pixel-identical to a browser. Inlining the real path/shape markup at every placement
+  // is the only way to make the icons come out as plain vector paths in AI, matching what
+  // browsers already show. This does make the exported file larger than the old
+  // symbol-based version; that size cost is the trade-off for correct vector output.
+  const variants = icons.map(() => []); // variants[iconIdx][colorIdx] -> {kind:'svg', vw, vh, rootAttrs, innerMarkup} | {kind:'raster', dataUrl}
+  for (let ii=0; ii<icons.length; ii++){
+    const icon = icons[ii];
+    if (icon.type === "svg"){
+      for (let ci=0; ci<plan.colors.length; ci++){
+        const hex = plan.colors[ci];
+        const recolored = hex ? recolorSvgString(icon.svgText, hex) : icon.svgText;
+        // Icons exported with class-based CSS (a <style> block + class="..." on each shape —
+        // the common Illustrator/Figma "CSS" export mode) get their new color written into
+        // the <style> text by recolorSvgString above, but the shapes themselves still only
+        // carry a class attribute; the actual paint color still depends on that <style>
+        // block being applied. Browsers do this reliably, but Adobe Illustrator's SVG
+        // importer does not reliably apply class-based CSS from <style> blocks, so those
+        // icons come out unstyled (default/black) there even though the color data is
+        // present in the file. Resolving each class's fill/stroke into a literal attribute
+        // on the matching elements — the same fix already used for canvas rasterization
+        // below — makes the color show correctly regardless of CSS support.
+        const inner = inlineClassFillStroke(recolored);
+        const doc = new DOMParser().parseFromString(inner, "image/svg+xml");
+        // Outline icon sets (Feather/Tabler/Lucide/Heroicons, etc.) commonly set fill/stroke
+        // only on the root <svg>, with children inheriting it — but each placement below is
+        // a fresh <g> that doesn't inherit anything from the original root, so without
+        // copying these over explicitly, such icons come out solid-filled black (or
+        // invisible) instead of their intended outline look.
+        const rootAttrs = extractRootPresentationAttrs(doc.documentElement);
+        const innerMarkup = Array.from(doc.documentElement.children).map(n => new XMLSerializer().serializeToString(n)).join("");
+        variants[ii].push({kind:"svg", vw: icon.w, vh: icon.h, rootAttrs, innerMarkup});
+      }
+    } else {
+      // raster source: pre-render base64 PNG per color variant (still embedded as <image>
+      // at each placement below — a raster source was never vector to begin with, so this
+      // part of the export is unaffected by the symbol/vector fix).
+      for (let ci=0; ci<plan.colors.length; ci++){
+        const img = await rasterizeVariant(ii, plan.colors[ci]);
+        const c = document.createElement("canvas"); c.width = icon.w; c.height = icon.h;
+        c.getContext("2d").drawImage(img, 0, 0, icon.w, icon.h);
+        variants[ii].push({kind:"raster", dataUrl: c.toDataURL("image/png")});
+      }
+    }
+  }
+
+  let uses = "";
+  let instanceCounter = 0;
+  items.forEach((it, idx) => {
+    let scaleMul = it.scaleMul||1;
+    if (params.randScale) scaleMul *= (0.5 + rng()*1.1);
+    let rotExtra = it.rotExtra||0;
+    if (params.randRotation) rotExtra += rng()*360;
+    let opacity = params.opacity/100;
+    if (params.randOpacity) opacity *= (0.35 + rng()*0.65);
+    let px = it.x, py = it.y;
+    if (params.randPosition){ px += (rng()*2-1)*0.04; py += (rng()*2-1)*0.04; }
+
+    const iconIdx = pickIconIndex(idx, rng, params.iconDistribution);
+    const icon = icons[iconIdx] || icons[0];
+    const iconVariants = variants[iconIdx] || variants[0];
+
+    let colorIdx = 0;
+    if (plan.mode === "duotone") colorIdx = idx % 2;
+    else if (plan.mode === "gradient") colorIdx = ((px+py)/2 < 0.5) ? 0 : 1;
+    else if (plan.mode === "palette") colorIdx = idx % iconVariants.length;
+    else if (plan.mode === "randomPalette") colorIdx = Math.floor(rng()*iconVariants.length);
+    const variant = iconVariants[colorIdx] || iconVariants[0];
+
+    const iconAspect = icon.h ? (icon.w/icon.h) : 1;
+    const w = W * baseIconFrac * scaleMul;
+    const h = w / iconAspect;
+    const flipS = `${params.flipH?-1:1},${params.flipV?-1:1}`;
+
+    xOffsets.forEach(ox => yOffsets.forEach(oy => {
+      const cx = (px + ox) * W + params.offsetX;
+      const cy = (py + oy) * H + params.offsetY;
+      if (cx < -w*1.5 || cx > W+w*1.5 || cy < -h*1.5 || cy > H+h*1.5) return;
+      const rot = params.rotation + rotExtra + (params.patternRotation||0);
+      const outerTransform = `translate(${cx.toFixed(1)} ${cy.toFixed(1)}) rotate(${rot.toFixed(1)}) scale(${flipS}) translate(${(-w/2).toFixed(1)} ${(-h/2).toFixed(1)})`;
+
+      if (variant.kind === "raster"){
+        // Both href AND xlink:href are written here — Adobe Illustrator's SVG importer
+        // (unlike current browsers) does not resolve the unprefixed SVG2 "href" attribute,
+        // so without xlink:href the image reference fails to resolve there.
+        uses += `<image href="${variant.dataUrl}" xlink:href="${variant.dataUrl}" opacity="${opacity.toFixed(3)}" transform="${outerTransform}" width="${w.toFixed(1)}" height="${h.toFixed(1)}"/>`;
+      } else {
+        // Give every placed COPY of the icon its own unique id/class namespace. Since the
+        // same source markup is now inlined many times (no shared <symbol> to hold ids
+        // once), skipping this would leave every placement with identical duplicate ids —
+        // exactly the problem namespacing originally guarded against, just one level down.
+        instanceCounter++;
+        const prefix = `p${instanceCounter}_`;
+        let markup = namespaceSvgClasses(variant.innerMarkup, prefix);
+        markup = namespaceSvgIds(markup, prefix);
+        const scaleToViewBox = `scale(${(w/variant.vw).toFixed(4)} ${(h/variant.vh).toFixed(4)})`;
+        uses += `<g opacity="${opacity.toFixed(3)}" transform="${outerTransform} ${scaleToViewBox}"${variant.rootAttrs}>${markup}</g>`;
+      }
+    }));
+  });
+
+  let svg = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n`
+    + `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`
+    + `<title>Seamless custom icon pattern</title>`
+    + bgDefs + bgRect + `<g>${uses}</g></svg>`;
+
+  if (el("optimizeSvg").checked){
+    svg = svg.replace(/>\s+</g, "><").replace(/\s{2,}/g, " ").replace(/(\d+\.\d{2})\d+/g, "$1");
+  }
+  if (icons.some(ic => ic.type !== "svg")){
+    svg = svg.replace("<title>Seamless custom icon pattern</title>",
+      "<title>Seamless custom icon pattern (raster source(s) — embedded as image, not auto-converted to vector)</title>");
+  }
+  return svg;
+}
+
+/* ===========================================================
+   14. BATCH GENERATOR
+   =========================================================== */
+el("btnBatch").addEventListener("click", async () => {
+  const n = +el("batchCount").value;
+  const grid = el("batchGrid"); grid.innerHTML = "";
+  setStatus(`Generating batch of ${n}…`);
+  const lockStyle = el("lockStyle").checked, lockPalette = el("lockPalette").checked, lockScale = el("lockScale").checked;
+  const currentStyle = el("patternStyle").value;
+  // remember the user's current working state so batch generation never leaves it altered
+  const restore = {
+    style: el("patternStyle").value,
+    scale: el("scale").value,
+    cat: state.activePaletteCategory,
+    name: state.activePaletteName,
+    colors: state.activePaletteColors.slice()
+  };
+  for (let i=0;i<n;i++){
+    const seed = randomSeed();
+    if (!lockStyle){
+      const styles = PATTERN_STYLES.map(s=>s.v);
+      el("patternStyle").value = styles[Math.floor(Math.random()*styles.length)];
+    } else el("patternStyle").value = currentStyle;
+    if (!lockPalette){
+      const cats = Object.keys(PALETTES);
+      const cat = cats[Math.floor(Math.random()*cats.length)];
+      const names = paletteNamesFor(cat);
+      const name = names[Math.floor(Math.random()*names.length)];
+      state.activePaletteCategory = cat; state.activePaletteName = name;
+      state.activePaletteColors = PALETTES[cat][name].slice();
+    }
+    if (!lockScale) el("scale").value = Math.round(60+Math.random()*140);
+
+    const item = document.createElement("div"); item.className = "batch-item";
+    const c = document.createElement("canvas");
+    await renderTileToCanvas(c, 260, 260, seed);
+    item.appendChild(c);
+    const meta = document.createElement("div"); meta.className = "batch-meta"; meta.textContent = "Seed " + seed;
+    item.appendChild(meta);
+    const actions = document.createElement("div"); actions.className = "batch-actions";
+    const useBtn = document.createElement("button"); useBtn.className="btn btn-tiny"; useBtn.textContent="Use This";
+    const capturedStyle = el("patternStyle").value, capturedCat = state.activePaletteCategory, capturedName = state.activePaletteName, capturedColors = state.activePaletteColors.slice(), capturedScale = el("scale").value;
+    useBtn.addEventListener("click", () => {
+      state.seed = seed;
+      el("patternStyle").value = capturedStyle;
+      state.activePaletteCategory = capturedCat; state.activePaletteName = capturedName; state.activePaletteColors = capturedColors;
+      el("paletteCategory").value = capturedCat; renderPaletteSwatches();
+      el("scale").value = capturedScale; el("valScale").textContent = capturedScale+"%";
+      scheduleRender();
+    });
+    const pngBtn = document.createElement("button"); pngBtn.className="btn btn-tiny"; pngBtn.textContent="PNG";
+    pngBtn.addEventListener("click", async () => {
+      const savedSeed = state.seed, savedStyle = el("patternStyle").value, savedCat=state.activePaletteCategory, savedName=state.activePaletteName, savedColors=state.activePaletteColors, savedScale = el("scale").value;
+      el("patternStyle").value = capturedStyle; state.activePaletteColors = capturedColors; el("scale").value = capturedScale;
+      const W = Math.max(1,+el("canvasW").value), H = Math.max(1,+el("canvasH").value);
+      const off = document.createElement("canvas");
+      await renderTileToCanvas(off, W, H, seed);
+      triggerDownload(off.toDataURL("image/png"), buildFilename("png").replace(/seed\d+/, "seed"+seed));
+      el("patternStyle").value = savedStyle; state.activePaletteColors = savedColors; el("scale").value = savedScale;
+    });
+    const svgBtn = document.createElement("button"); svgBtn.className="btn btn-tiny"; svgBtn.textContent="SVG";
+    svgBtn.addEventListener("click", async () => {
+      const savedSeed = state.seed, savedStyle = el("patternStyle").value, savedColors = state.activePaletteColors, savedScale = el("scale").value;
+      state.seed = seed; el("patternStyle").value = capturedStyle; state.activePaletteColors = capturedColors; el("scale").value = capturedScale;
+      const svgStr = await buildSvgExport();
+      state.seed = savedSeed; el("patternStyle").value = savedStyle; state.activePaletteColors = savedColors; el("scale").value = savedScale;
+      const blob = new Blob([svgStr], {type:"image/svg+xml"});
+      triggerDownload(URL.createObjectURL(blob), buildFilename("svg").replace(/seed\d+/, "seed"+seed));
+    });
+    actions.append(useBtn, pngBtn, svgBtn);
+    item.appendChild(actions);
+    grid.appendChild(item);
+  }
+  // restore the main canvas to the user's working state (batch iterations must not leave side effects)
+  el("patternStyle").value = restore.style;
+  el("scale").value = restore.scale; el("valScale").textContent = restore.scale + "%";
+  state.activePaletteCategory = restore.cat; state.activePaletteName = restore.name; state.activePaletteColors = restore.colors;
+  if (PALETTES[restore.cat]) el("paletteCategory").value = restore.cat;
+  renderPaletteSwatches();
+  scheduleRender();
+  setStatus(`Batch of ${n} ready.`);
+});
+
+/* ===========================================================
+   15. PROJECT SETTINGS — save / load / reset (localStorage)
+   =========================================================== */
+const SETTINGS_KEY = "motif-project-settings";
+function collectSettings(){
+  const ids = LIVE_INPUT_IDS.concat(["lockStyle","lockPalette","lockScale","canvasW","canvasH","dpi","jpgQuality","optimizeSvg"]);
+  const s = {};
+  ids.forEach(id => { const n = el(id); if (n) s[id] = (n.type==="checkbox") ? n.checked : n.value; });
+  s.seed = state.seed;
+  s.activePaletteCategory = state.activePaletteCategory;
+  s.activePaletteName = state.activePaletteName;
+  s.activePaletteColors = state.activePaletteColors;
+  s.customSlots = state.customSlots;
+  if (state.hasUserIcons){
+    s.icons = state.icons.map(icon => {
+      if (icon.type === "svg") return {type:"svg", svgText: icon.svgText};
+      try{
+        const c = document.createElement("canvas"); c.width = icon.w; c.height = icon.h;
+        c.getContext("2d").drawImage(icon.img, 0, 0);
+        return {type:"raster", dataUrl: c.toDataURL("image/png")};
+      }catch(e){ return null; } // skip image if too large / tainted
+    }).filter(Boolean);
+  }
+  return s;
+}
+el("btnSaveSettings").addEventListener("click", () => {
+  try{
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(collectSettings()));
+    setStatus("Settings saved.");
+  }catch(e){ setStatus("Could not save settings (data may be too large)."); }
+});
+el("btnLoadSettings").addEventListener("click", () => {
+  const raw = localStorage.getItem(SETTINGS_KEY);
+  if (!raw){ setStatus("No saved settings found."); return; }
+  const s = JSON.parse(raw);
+  Object.keys(s).forEach(id => {
+    const n = el(id);
+    if (!n) return;
+    if (n.type === "checkbox") n.checked = s[id]; else n.value = s[id];
+  });
+  if (s.seed) state.seed = s.seed;
+  if (s.activePaletteColors){
+    state.activePaletteCategory = s.activePaletteCategory;
+    state.activePaletteName = s.activePaletteName;
+    state.activePaletteColors = s.activePaletteColors;
+    if (PALETTES[s.activePaletteCategory]) el("paletteCategory").value = s.activePaletteCategory;
+  }
+  if (s.customSlots){ state.customSlots = s.customSlots; renderCustomSlots(); }
+  renderPaletteSwatches();
+  syncColorRows();
+  const savedIcons = s.icons || (s.icon ? [s.icon] : null); // s.icon: back-compat with the old single-icon save format
+  if (savedIcons && savedIcons.length){
+    state.icons = []; // about to replace the whole set with the saved one
+    Promise.all(savedIcons.map(ic => new Promise(resolve => {
+      if (ic.type === "svg") resolve(addIconFromSvgText(ic.svgText));
+      else {
+        const img = new Image();
+        img.onload = () => resolve(addIconFromRasterImage(img));
+        img.onerror = () => resolve(null);
+        img.src = ic.dataUrl;
+      }
+    }))).then(results => {
+      state.hasUserIcons = state.icons.length > 0;
+      if (!state.hasUserIcons) resetIconsToPlaceholder();
+      renderIconGallery();
+      scheduleRender();
+      setStatus("Settings loaded.");
+    });
+  } else {
+    scheduleRender();
+    setStatus("Settings loaded.");
+  }
+});
+el("btnResetSettings").addEventListener("click", () => {
+  localStorage.removeItem(SETTINGS_KEY);
+  location.reload();
+});
+
+/* ===========================================================
+   16. INITIAL RENDER
+   =========================================================== */
+syncColorRows();
+renderIconGallery();
+el("seedInput").value = state.seed;
+scheduleRender();
+
+</script>
+</body>
+</html>
